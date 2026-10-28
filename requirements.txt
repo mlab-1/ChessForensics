@@ -1,0 +1,9 @@
+chess>=1.11
+fastapi>=0.111
+uvicorn[standard]>=0.30
+plotly>=5.22
+scipy>=1.13
+requests>=2.32
+tenacity>=8.4
+numpy>=1.26
+pandas>=2.2

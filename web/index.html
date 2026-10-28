@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chess Forensics</title>
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cm-chessboard@8.7.5/assets/chessboard.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cm-chessboard@8.7.5/assets/extensions/markers/markers.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto">
+    <polygon points="0 0, 6 2, 0 4" fill="currentColor" opacity="0.7"/>
+  </marker>
+</defs></svg>
+</head>
+<body>
+
+<div id="cosmos">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+  <div class="orb o4"></div>
+  <div class="orb o5"></div>
+</div>
+
+<div id="app">
+
+  <!-- STICKY NAV (always visible) -->
+  <header id="topbar">
+    <span class="logo-sm">CHESS FORENSICS</span>
+    <nav class="topbar-right">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#cases-section" class="nav-link">Cases</a>
+      <a href="#methodology" class="nav-link">The Project</a>
+      <button class="btn-ghost" id="open-input">New Analysis</button>
+    </nav>
+  </header>
+
+  <!-- INPUT OVERLAY (modal, shown on demand) -->
+  <div id="input-overlay" class="hidden">
+    <div id="input-card">
+      <button class="overlay-close" id="close-overlay" aria-label="Close">&times;</button>
+
+      <div class="modal-header">
+        <h2 class="modal-title">New Analysis</h2>
+        <div class="seg seg--mode" id="analysis-type">
+          <button data-type="single" aria-selected="true">Single Game</button>
+          <button data-type="scan">Player Scan</button>
+        </div>
+      </div>
+
+      <!-- SINGLE GAME INPUTS -->
+      <div id="single-inputs">
+      <div class="seg seg--source" id="modes">
+        <button data-mode="paste" aria-selected="true">Paste PGN</button>
+        <button data-mode="file">Upload</button>
+        <button data-mode="url">URL</button>
+        <button data-mode="chesscom">Chess.com</button>
+        <button data-mode="lichess">Lichess</button>
+      </div>
+
+      <div class="mode-body" data-for="paste">
+        <label class="fld"><span>PGN</span>
+          <textarea id="pgn" spellcheck="false" placeholder="1. e4 e5 2. Nf3 Nc6 ..."></textarea>
+        </label>
+      </div>
+      <div class="mode-body" data-for="file" hidden>
+        <label class="fld"><span>PGN file</span><input type="file" id="pgnfile" accept=".pgn,.txt"></label>
+      </div>
+      <div class="mode-body" data-for="url" hidden>
+        <label class="fld"><span>Game URL</span><input type="text" id="gameurl" spellcheck="false" placeholder="https://lichess.org/abcd1234"></label>
+        <button class="btn-ghost" id="fetchurl" style="margin-top:6px">Fetch</button>
+      </div>
+      <div class="mode-body" data-for="chesscom" hidden>
+        <label class="fld"><span>Username</span><input type="text" id="ccuser" spellcheck="false"></label>
+        <label class="fld"><span>Games</span><input type="number" id="cccount" value="10" min="1" max="30"></label>
+        <label class="fld"><span>Time control</span>
+          <select id="ccspeed">
+            <option value="">All</option>
+            <option value="rapid" selected>Rapid</option>
+            <option value="blitz">Blitz</option>
+            <option value="bullet">Bullet</option>
+            <option value="daily">Daily</option>
+          </select>
+        </label>
+        <button class="btn-ghost" id="fetchcc">Fetch</button>
+      </div>
+      <div class="mode-body" data-for="lichess" hidden>
+        <label class="fld"><span>Username</span><input type="text" id="lcuser" spellcheck="false"></label>
+        <label class="fld"><span>Games</span><input type="number" id="lccount" value="10" min="1" max="30"></label>
+        <label class="fld"><span>Time control</span>
+          <select id="lcspeed">
+            <option value="">All</option>
+            <option value="rapid,classical" selected>Rapid+Classical</option>
+            <option value="rapid">Rapid</option>
+            <option value="blitz">Blitz</option>
+            <option value="bullet">Bullet</option>
+            <option value="classical">Classical</option>
+          </select>
+        </label>
+        <button class="btn-ghost" id="fetchlc">Fetch</button>
+      </div>
+
+      <div id="pickwrap" hidden>
+        <label class="fld"><span>Game</span><select id="pick"></select></label>
+      </div>
+      </div><!-- /single-inputs -->
+
+      <!-- SCAN INPUTS -->
+      <div id="scan-inputs" hidden>
+        <div class="seg seg--source" id="scan-source">
+          <button data-src="chesscom" aria-selected="true">Chess.com</button>
+          <button data-src="lichess">Lichess</button>
+        </div>
+        <label class="fld"><span>Username</span><input type="text" id="scan-user" spellcheck="false" placeholder="username"></label>
+        <label class="fld"><span>Games to analyse</span><input type="number" id="scan-count" value="20" min="5" max="500"></label>
+        <label class="fld"><span>Time control</span>
+          <select id="scan-speed"></select>
+        </label>
+        <label class="chk"><input type="checkbox" id="scan-quick"><span>Quick scan (faster, fewer signals)</span></label>
+        <p class="hint">Analyses multiple games and aggregates the evidence.</p>
+      </div>
+
+      <details class="settings-collapse">
+        <summary class="settings-toggle">Advanced settings</summary>
+        <div class="settings-body">
+          <div class="settings-row">
+            <label class="fld"><span>Prior</span><input type="number" id="prior" value="0.01" min="0.0005" max="0.5" step="0.005"></label>
+            <label class="fld"><span>Engine instances</span><input type="number" id="pool" value="10" min="1" max="20"></label>
+          </div>
+          <label class="chk"><input type="checkbox" id="deep"><span>Deep second pass</span></label>
+        </div>
+      </details>
+
+      <button class="btn-cosmic" id="run">Analyse</button>
+      <div id="baseinfo" class="hint" style="margin-top:8px;text-align:center">loading reference model...</div>
+    </div>
+  </div>
+
+  <div id="msgs" style="padding:0 32px;max-width:1520px;margin:0 auto"></div>
+
+  <div id="progwrap" hidden>
+    <div id="scan-boards"></div>
+    <div class="scan-center">
+      <div class="scan-anim">
+        <div class="scan-ring ring-1"></div>
+        <div class="scan-ring ring-2"></div>
+        <div class="scan-ring ring-3"></div>
+        <div class="scan-icon">&#9822;</div>
+      </div>
+      <div class="scan-status-text" id="scan-status">Analysing positions...</div>
+      <div id="progtrack"><div id="progfill"></div></div>
+      <div id="progtext"><span class="spin"></span> starting engines</div>
+      <button class="btn-ghost scan-cancel-btn" id="cancel-scan" hidden>Cancel</button>
+    </div>
+  </div>
+
+  <div id="stage">
+    <!-- LANDING PAGE -->
+    <section id="welcome">
+
+      <!-- HERO -->
+      <div class="hero">
+        <div class="hero-inner">
+          <div class="hero-badge">Bayesian Engine-Correlation Analysis</div>
+          <h1 class="hero-title">Chess Forensics</h1>
+          <p class="hero-desc">Detect engine assistance in chess games through multi-signal statistical analysis. Honest uncertainty. No false certainty.</p>
+          <div class="hero-actions">
+            <button class="btn-cosmic" id="hero-cta" style="width:auto;padding:16px 48px">Start Analysis</button>
+            <a href="#cases-section" class="btn-ghost hero-scroll">See documented cases</a>
+            <a href="#methodology" class="btn-ghost hero-scroll">The Project</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEATURES -->
+      <div id="features" class="features-section">
+        <h2 class="sec">How It Works</h2>
+        <p class="secsub">Every game is analysed through multiple independent statistical lenses, then combined with proper correlation adjustment</p>
+        <div class="features-grid">
+
+          <!-- 01 ENGINE ANALYSIS — mini board with candidate arrows -->
+          <div class="feature-card">
+            <div class="feat-viz">
+              <svg class="feat-board" viewBox="0 0 120 120">
+                <!-- 3x3 mini board squares -->
+                <rect x="0" y="0" width="40" height="40" fill="rgba(240,217,181,0.12)"/>
+                <rect x="40" y="0" width="40" height="40" fill="rgba(181,136,99,0.15)"/>
+                <rect x="80" y="0" width="40" height="40" fill="rgba(240,217,181,0.12)"/>
+                <rect x="0" y="40" width="40" height="40" fill="rgba(181,136,99,0.15)"/>
+                <rect x="40" y="40" width="40" height="40" fill="rgba(240,217,181,0.12)"/>
+                <rect x="80" y="40" width="40" height="40" fill="rgba(181,136,99,0.15)"/>
+                <rect x="0" y="80" width="40" height="40" fill="rgba(240,217,181,0.12)"/>
+                <rect x="40" y="80" width="40" height="40" fill="rgba(181,136,99,0.15)"/>
+                <rect x="80" y="80" width="40" height="40" fill="rgba(240,217,181,0.12)"/>
+                <!-- knight piece -->
+                <text x="60" y="68" text-anchor="middle" font-size="32" fill="var(--fg)" class="feat-piece">&#9816;</text>
+                <!-- candidate move arrows -->
+                <line x1="60" y1="52" x2="20" y2="18" class="feat-arrow arrow-best"><animate attributeName="opacity" values="0;1;1" dur="2s" repeatCount="indefinite"/></line>
+                <line x1="60" y1="52" x2="100" y2="18" class="feat-arrow arrow-alt"><animate attributeName="opacity" values="0;0.5;0.5" dur="2s" repeatCount="indefinite" begin="0.3s"/></line>
+                <line x1="60" y1="52" x2="20" y2="98" class="feat-arrow arrow-alt"><animate attributeName="opacity" values="0;0.3;0.3" dur="2s" repeatCount="indefinite" begin="0.6s"/></line>
+                <!-- best move label -->
+                <text x="16" y="14" font-size="8" fill="var(--emerald)" font-family="var(--font-mono)" font-weight="600" opacity="0"><animate attributeName="opacity" values="0;1;1" dur="2s" repeatCount="indefinite" begin="0.8s"/>+0.0</text>
+                <text x="84" y="14" font-size="8" fill="var(--gold)" font-family="var(--font-mono)" font-weight="600" opacity="0"><animate attributeName="opacity" values="0;0.7;0.7" dur="2s" repeatCount="indefinite" begin="1s"/>−0.4</text>
+              </svg>
+            </div>
+            <h4>Engine Analysis</h4>
+            <p>A chess engine finds the best move in every position. We compare the player's actual moves to what the engine recommends</p>
+          </div>
+
+          <!-- 02 MULTIPLE SIGNALS — animated signal bars -->
+          <div class="feature-card">
+            <div class="feat-viz">
+              <div class="feat-signals">
+                <div class="feat-sig-row"><span class="feat-sig-label">Accuracy</span><div class="feat-sig-track"><div class="feat-sig-fill" style="--fw:72%;--fc:var(--emerald);--delay:0s"></div></div></div>
+                <div class="feat-sig-row"><span class="feat-sig-label">Blunders</span><div class="feat-sig-track"><div class="feat-sig-fill" style="--fw:15%;--fc:var(--emerald);--delay:0.15s"></div></div></div>
+                <div class="feat-sig-row"><span class="feat-sig-label">Timing</span><div class="feat-sig-track"><div class="feat-sig-fill" style="--fw:45%;--fc:var(--gold);--delay:0.3s"></div></div></div>
+                <div class="feat-sig-row"><span class="feat-sig-label">Complexity</span><div class="feat-sig-track"><div class="feat-sig-fill" style="--fw:88%;--fc:var(--red);--delay:0.45s"></div></div></div>
+                <div class="feat-sig-row"><span class="feat-sig-label">IPR</span><div class="feat-sig-track"><div class="feat-sig-fill" style="--fw:60%;--fc:var(--cyan);--delay:0.6s"></div></div></div>
+              </div>
+            </div>
+            <h4>Multiple Signals</h4>
+            <p>No single stat tells the whole story. We measure move accuracy, blunder rates, complexity handling, timing patterns, and more</p>
+          </div>
+
+          <!-- 03 FAIR COMPARISON — rating-conditional bell curves -->
+          <div class="feature-card">
+            <div class="feat-viz">
+              <svg class="feat-curves" viewBox="0 0 140 80">
+                <!-- axis -->
+                <line x1="10" y1="70" x2="130" y2="70" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+                <!-- 1200 player curve (wider, left) -->
+                <path d="M15,70 Q35,70 50,30 Q65,70 85,70" fill="none" stroke="var(--gold)" stroke-width="1.5" opacity="0.6" stroke-dasharray="100" stroke-dashoffset="100"><animate attributeName="stroke-dashoffset" from="100" to="0" dur="1.5s" fill="freeze" begin="0.3s"/></path>
+                <text x="50" y="24" font-size="7" fill="var(--gold)" text-anchor="middle" font-family="var(--font-mono)" opacity="0"><animate attributeName="opacity" to="1" dur="0.3s" fill="freeze" begin="1.5s"/>1200</text>
+                <!-- GM curve (narrower, right, higher match rate) -->
+                <path d="M55,70 Q75,70 90,20 Q105,70 125,70" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.8" stroke-dasharray="100" stroke-dashoffset="100"><animate attributeName="stroke-dashoffset" from="100" to="0" dur="1.5s" fill="freeze" begin="0.6s"/></path>
+                <text x="90" y="14" font-size="7" fill="var(--cyan)" text-anchor="middle" font-family="var(--font-mono)" opacity="0"><animate attributeName="opacity" to="1" dur="0.3s" fill="freeze" begin="1.8s"/>2600</text>
+                <!-- marker: 50% line -->
+                <line x1="70" y1="70" x2="70" y2="5" stroke="rgba(255,255,255,0.08)" stroke-width="0.5" stroke-dasharray="2,2"/>
+                <text x="70" y="78" font-size="6" fill="var(--fg-3)" text-anchor="middle" font-family="var(--font-mono)">50%</text>
+                <text x="10" y="78" font-size="6" fill="var(--fg-3)" font-family="var(--font-mono)">0%</text>
+                <text x="130" y="78" font-size="6" fill="var(--fg-3)" font-family="var(--font-mono)">100%</text>
+              </svg>
+            </div>
+            <h4>Fair Comparison</h4>
+            <p>Signals are compared against what's normal for the player's rating. A 1200 matching the engine 50% of the time is suspicious; for a GM, it's Tuesday</p>
+          </div>
+
+          <!-- 04 HONEST VERDICT — animated probability gauge -->
+          <div class="feature-card">
+            <div class="feat-viz">
+              <svg class="feat-gauge" viewBox="0 0 120 70">
+                <!-- gauge arc background -->
+                <path d="M15,60 A45,45 0 0,1 105,60" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6" stroke-linecap="round"/>
+                <!-- green zone -->
+                <path d="M15,60 A45,45 0 0,1 48,18" fill="none" stroke="var(--emerald)" stroke-width="6" stroke-linecap="round" opacity="0.3"/>
+                <!-- yellow zone -->
+                <path d="M48,18 A45,45 0 0,1 72,18" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" opacity="0.3"/>
+                <!-- red zone -->
+                <path d="M72,18 A45,45 0 0,1 105,60" fill="none" stroke="var(--red)" stroke-width="6" stroke-linecap="round" opacity="0.3"/>
+                <!-- needle -->
+                <line x1="60" y1="60" x2="30" y2="30" stroke="var(--fg)" stroke-width="1.5" stroke-linecap="round" class="gauge-needle"/>
+                <circle cx="60" cy="60" r="3" fill="var(--fg)"/>
+                <!-- labels -->
+                <text x="12" y="68" font-size="7" fill="var(--emerald)" font-family="var(--font-mono)">0%</text>
+                <text x="55" y="10" font-size="7" fill="var(--gold)" font-family="var(--font-mono)">50%</text>
+                <text x="98" y="68" font-size="7" fill="var(--red)" font-family="var(--font-mono)">100%</text>
+                <!-- value readout -->
+                <text x="60" y="55" text-anchor="middle" font-size="11" fill="var(--emerald)" font-family="var(--font-mono)" font-weight="700" class="gauge-val">3.2%</text>
+              </svg>
+            </div>
+            <h4>Honest Verdict</h4>
+            <p>The result is a probability, not a yes/no. One game is rarely conclusive &mdash; scanning multiple games gives much stronger evidence</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASE STUDIES -->
+      <div id="cases-section" class="cases-section">
+        <h2 class="sec">Documented Cases</h2>
+        <p class="secsub">The pipeline validated against confirmed professional cheating cases with known outcomes</p>
+        <div id="case-studies" class="case-grid"></div>
+        <p class="cases-note" id="cases-note" hidden>All analyses performed at depth 12 with shipped default baselines. Statistical evidence should never be the sole basis for accusations.</p>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- METHODOLOGY — "Behind the Science"                          -->
+      <!-- ============================================================ -->
+      <div id="methodology" class="method-section">
+
+        <!-- INTRO -->
+        <div class="method-block">
+          <h2 class="sec">The Project</h2>
+          <p class="secsub">The problems, the math, the validation, and the honest limitations behind detecting engine-assisted play.</p>
+        </div>
+
+        <!-- 1. THE PROBLEM -->
+        <div class="method-block">
+          <div class="method-card">
+            <span class="method-tag">The Problem</span>
+            <h3>Detecting cheating in chess is genuinely hard</h3>
+            <p>When a player uses a chess engine during a game, their moves will look more like what a computer would play. But here's the catch: <strong>strong players also match the engine often</strong>. A grandmaster's best game might look just like a cheater's average game.</p>
+            <p>Any detection system has to solve three problems at once:</p>
+            <div class="method-challenges">
+              <div class="method-challenge">
+                <div class="mc-icon">
+                  <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--gold)" stroke-width="2" opacity="0.6"/><text x="20" y="25" text-anchor="middle" font-size="16" fill="var(--gold)">?</text></svg>
+                </div>
+                <div>
+                  <strong>False positives are catastrophic</strong>
+                  <p>Wrongly accusing a clean player can end a career. The system must be conservative.</p>
+                </div>
+              </div>
+              <div class="method-challenge">
+                <div class="mc-icon">
+                  <svg viewBox="0 0 40 40"><rect x="6" y="6" width="28" height="28" rx="4" fill="none" stroke="var(--cyan)" stroke-width="2" opacity="0.6"/><text x="20" y="25" text-anchor="middle" font-size="14" fill="var(--cyan)">&#9822;</text></svg>
+                </div>
+                <div>
+                  <strong>Skill varies enormously</strong>
+                  <p>What's suspicious for a 1200 is normal for a 2600. One size does not fit all.</p>
+                </div>
+              </div>
+              <div class="method-challenge">
+                <div class="mc-icon">
+                  <svg viewBox="0 0 40 40"><line x1="8" y1="32" x2="32" y2="8" stroke="var(--red)" stroke-width="2" opacity="0.6"/><line x1="8" y1="8" x2="32" y2="32" stroke="var(--red)" stroke-width="2" opacity="0.6"/></svg>
+                </div>
+                <div>
+                  <strong>One metric is never enough</strong>
+                  <p>Engine match rate alone is too noisy. You need multiple independent signals combined properly.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. THE APPROACH -->
+        <div class="method-block">
+          <div class="method-card">
+            <span class="method-tag">The Approach</span>
+            <h3>Bayesian evidence combination</h3>
+            <p>Instead of a binary "cheater or not" threshold, we use <strong>Bayes' theorem</strong> to compute the probability of engine assistance given the evidence. This is the same mathematical framework used in medical testing, courtroom forensics, and spam filtering.</p>
+
+            <div class="method-formula">
+              <div class="mf-box">
+                <div class="mf-label">Start with a prior</div>
+                <div class="mf-val">1%</div>
+                <div class="mf-desc">Base rate of cheating</div>
+              </div>
+              <div class="mf-arrow">&rarr;</div>
+              <div class="mf-box">
+                <div class="mf-label">Collect evidence</div>
+                <div class="mf-val">+14.3 dB</div>
+                <div class="mf-desc">Combined from all signals</div>
+              </div>
+              <div class="mf-arrow">&rarr;</div>
+              <div class="mf-box mf-result">
+                <div class="mf-label">Get a posterior</div>
+                <div class="mf-val">21.3%</div>
+                <div class="mf-desc">Updated probability</div>
+              </div>
+            </div>
+
+            <p>Evidence is measured in <strong>decibans (dB)</strong> &mdash; a logarithmic scale where +10 dB means "10&times; more likely cheating" and &minus;10 dB means "10&times; more likely clean." This lets evidence from different signals and different games simply <em>add up</em>.</p>
+          </div>
+        </div>
+
+        <!-- 3. THE SIGNALS -->
+        <div class="method-block">
+          <div class="method-card">
+            <span class="method-tag">The Signals</span>
+            <h3>What we actually measure</h3>
+            <p>Each game is run through Stockfish (one of the world's strongest engines), which evaluates every position and finds the best moves. From this analysis we extract:</p>
+
+            <div class="method-signals-grid">
+              <div class="ms-item">
+                <div class="ms-head">
+                  <svg viewBox="0 0 24 24" class="ms-icon"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--emerald)" stroke-width="1.5"/><path d="M8 12l3 3 5-6" fill="none" stroke="var(--emerald)" stroke-width="1.5"/></svg>
+                  <strong>Engine match rate</strong>
+                </div>
+                <p>How often the player's move matches the engine's #1 choice. Expected range depends heavily on rating.</p>
+              </div>
+              <div class="ms-item">
+                <div class="ms-head">
+                  <svg viewBox="0 0 24 24" class="ms-icon"><rect x="3" y="14" width="4" height="7" fill="var(--cyan)" rx="1" opacity="0.5"/><rect x="10" y="8" width="4" height="13" fill="var(--cyan)" rx="1" opacity="0.7"/><rect x="17" y="3" width="4" height="18" fill="var(--cyan)" rx="1"/></svg>
+                  <strong>Centipawn loss (ACPL)</strong>
+                </div>
+                <p>Average "points" lost per move compared to the best move. Lower means more accurate play.</p>
+              </div>
+              <div class="ms-item">
+                <div class="ms-head">
+                  <svg viewBox="0 0 24 24" class="ms-icon"><path d="M3 20L8 10L13 15L18 5L21 8" fill="none" stroke="var(--gold)" stroke-width="1.5"/></svg>
+                  <strong>Complexity slope</strong>
+                </div>
+                <p>Do they play better in complex positions than in simple ones? Humans usually do worse; engines don't care.</p>
+              </div>
+              <div class="ms-item">
+                <div class="ms-head">
+                  <svg viewBox="0 0 24 24" class="ms-icon"><path d="M12 3v12M7 10l5 5 5-5" fill="none" stroke="var(--red)" stroke-width="1.5"/><line x1="5" y1="20" x2="19" y2="20" stroke="var(--red)" stroke-width="1.5"/></svg>
+                  <strong>Blunder distribution</strong>
+                </div>
+                <p>The CPL tail test: cheaters have suspiciously few large mistakes compared to what's expected for their rating.</p>
+              </div>
+              <div class="ms-item">
+                <div class="ms-head">
+                  <svg viewBox="0 0 24 24" class="ms-icon"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--pink)" stroke-width="1.5"/><path d="M12 7v5l3 3" fill="none" stroke="var(--pink)" stroke-width="1.5"/></svg>
+                  <strong>Timing patterns</strong>
+                </div>
+                <p>Clock data reveals if thinking time correlates with move quality. Humans think longer on hard moves; bots don't.</p>
+              </div>
+              <div class="ms-item">
+                <div class="ms-head">
+                  <svg viewBox="0 0 24 24" class="ms-icon"><line x1="12" y1="3" x2="12" y2="21" stroke="var(--fg-3)" stroke-width="1" stroke-dasharray="2,2"/><circle cx="8" cy="8" r="3" fill="none" stroke="var(--emerald)" stroke-width="1.5"/><circle cx="16" cy="16" r="3" fill="none" stroke="var(--red)" stroke-width="1.5"/></svg>
+                  <strong>Switchpoint detection</strong>
+                </div>
+                <p>Did the player suddenly start playing much better mid-game? A statistical changepoint test finds where.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. THE BASELINE -->
+        <div class="method-block">
+          <div class="method-card">
+            <span class="method-tag">The Baseline</span>
+            <h3>Knowing what "normal" looks like</h3>
+            <p>The most critical piece: a reference model of how players at each rating level <em>actually play</em>. Without it, you can't tell if 55% engine match is suspicious or routine.</p>
+
+            <div class="method-baseline-viz">
+              <div class="mb-chart">
+                <div class="mb-title">Expected top-1 match rate by rating</div>
+                <svg viewBox="0 0 280 120" class="mb-svg">
+                  <!-- axes -->
+                  <line x1="40" y1="100" x2="270" y2="100" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
+                  <line x1="40" y1="10" x2="40" y2="100" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
+                  <!-- y labels -->
+                  <text x="36" y="103" font-size="7" fill="var(--fg-3)" text-anchor="end" font-family="var(--font-mono)">30%</text>
+                  <text x="36" y="55" font-size="7" fill="var(--fg-3)" text-anchor="end" font-family="var(--font-mono)">40%</text>
+                  <text x="36" y="15" font-size="7" fill="var(--fg-3)" text-anchor="end" font-family="var(--font-mono)">50%</text>
+                  <!-- x labels -->
+                  <text x="55" y="112" font-size="7" fill="var(--fg-3)" text-anchor="middle" font-family="var(--font-mono)">1000</text>
+                  <text x="120" y="112" font-size="7" fill="var(--fg-3)" text-anchor="middle" font-family="var(--font-mono)">1600</text>
+                  <text x="185" y="112" font-size="7" fill="var(--fg-3)" text-anchor="middle" font-family="var(--font-mono)">2200</text>
+                  <text x="250" y="112" font-size="7" fill="var(--fg-3)" text-anchor="middle" font-family="var(--font-mono)">2800</text>
+                  <!-- the curve: match rate rises with rating -->
+                  <path d="M55,95 C90,90 120,70 155,52 S210,25 250,15" fill="none" stroke="var(--cyan)" stroke-width="2">
+                    <animate attributeName="stroke-dashoffset" from="300" to="0" dur="2s" fill="freeze"/>
+                  </path>
+                  <!-- data points -->
+                  <circle cx="55" cy="95" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="0.5s" fill="freeze"/></circle>
+                  <circle cx="90" cy="85" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="0.8s" fill="freeze"/></circle>
+                  <circle cx="120" cy="70" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="1.1s" fill="freeze"/></circle>
+                  <circle cx="155" cy="52" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="1.4s" fill="freeze"/></circle>
+                  <circle cx="200" cy="30" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="1.7s" fill="freeze"/></circle>
+                  <circle cx="250" cy="15" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="2.0s" fill="freeze"/></circle>
+                  <!-- annotation -->
+                  <text x="160" y="45" font-size="7" fill="var(--fg-3)" font-family="var(--font-body)">A GM matching 49%</text>
+                  <text x="160" y="53" font-size="7" fill="var(--fg-3)" font-family="var(--font-body)">is completely normal</text>
+                </svg>
+              </div>
+              <div class="mb-stats">
+                <div class="mb-stat">
+                  <div class="mb-num" id="corpus-games">3.4M</div>
+                  <div class="mb-label">games in corpus</div>
+                </div>
+                <div class="mb-stat">
+                  <div class="mb-num" id="corpus-positions">229M</div>
+                  <div class="mb-label">positions analysed</div>
+                </div>
+                <div class="mb-stat">
+                  <div class="mb-num" id="corpus-bands">12</div>
+                  <div class="mb-label">rating bands fitted</div>
+                </div>
+              </div>
+            </div>
+
+            <p>The corpus spans the full rating spectrum from beginner (&lt;800) through super-GM (2800+), split into 12 bands every 200 Elo. Each band gets its own fitted model so a 1200's "normal" isn't a 2400's "normal".</p>
+          </div>
+        </div>
+
+        <!-- 5. EVIDENCE IN ACTION -->
+        <div class="method-block">
+          <div class="method-card">
+            <span class="method-tag">Evidence in Action</span>
+            <h3>How a verdict builds up</h3>
+            <p>Each signal contributes its own evidence (positive for suspicious, negative for normal). These combine with correlation adjustments to prevent double-counting:</p>
+
+            <div class="method-waterfall">
+              <div class="mw-row"><span class="mw-name">Engine match</span><div class="mw-bar-wrap"><div class="mw-bar mw-pos" style="--w:65%">+8.2 dB</div></div></div>
+              <div class="mw-row"><span class="mw-name">ACPL</span><div class="mw-bar-wrap"><div class="mw-bar mw-pos" style="--w:45%">+5.6 dB</div></div></div>
+              <div class="mw-row"><span class="mw-name">Blunder rate</span><div class="mw-bar-wrap"><div class="mw-bar mw-pos" style="--w:30%">+3.8 dB</div></div></div>
+              <div class="mw-row"><span class="mw-name">Complexity slope</span><div class="mw-bar-wrap"><div class="mw-bar mw-neg" style="--w:20%">&minus;2.4 dB</div></div></div>
+              <div class="mw-row"><span class="mw-name">Timing pattern</span><div class="mw-bar-wrap"><div class="mw-bar mw-neg" style="--w:10%">&minus;1.2 dB</div></div></div>
+              <div class="mw-row mw-total"><span class="mw-name">Total</span><div class="mw-bar-wrap"><div class="mw-bar mw-pos" style="--w:55%">+14.0 dB</div></div></div>
+            </div>
+
+            <p>When scanning <strong>multiple games</strong>, evidence from each game simply adds to the running total. 20 clean games at &minus;8 dB each pile up to &minus;160 dB of exonerating evidence &mdash; even one suspicious game at +20 dB can't overcome that aggregate. But the system will still <strong>flag that individual game</strong> for closer review.</p>
+          </div>
+        </div>
+
+        <!-- 6. THE PIPELINE -->
+        <div class="method-block">
+          <div class="method-card">
+            <span class="method-tag">The Pipeline</span>
+            <h3>From PGN to verdict</h3>
+            <div class="method-pipeline">
+              <div class="mp-step">
+                <div class="mp-num">1</div>
+                <div class="mp-body">
+                  <strong>Ingest</strong>
+                  <p>Parse PGN, fetch from Chess.com or Lichess API, detect book moves via the Lichess opening explorer</p>
+                </div>
+              </div>
+              <div class="mp-arrow">&darr;</div>
+              <div class="mp-step">
+                <div class="mp-num">2</div>
+                <div class="mp-body">
+                  <strong>Engine analysis</strong>
+                  <p>Multi-pass Stockfish: depth 4 shallow scan, depth 12 main pass, depth 22 on critical positions</p>
+                </div>
+              </div>
+              <div class="mp-arrow">&darr;</div>
+              <div class="mp-step">
+                <div class="mp-num">3</div>
+                <div class="mp-body">
+                  <strong>Feature extraction</strong>
+                  <p>Per-move frame with match rank, CP loss, complexity, timing, game phase. Book and forced moves excluded.</p>
+                </div>
+              </div>
+              <div class="mp-arrow">&darr;</div>
+              <div class="mp-step">
+                <div class="mp-num">4</div>
+                <div class="mp-body">
+                  <strong>Signal computation</strong>
+                  <p>13+ statistical tests: z-scores against the rating-specific baseline for each signal independently</p>
+                </div>
+              </div>
+              <div class="mp-arrow">&darr;</div>
+              <div class="mp-step">
+                <div class="mp-num">5</div>
+                <div class="mp-body">
+                  <strong>Bayesian combination</strong>
+                  <p>Correlation-adjusted log-likelihood ratios summed into a total. Credible intervals via Monte Carlo.</p>
+                </div>
+              </div>
+              <div class="mp-arrow">&darr;</div>
+              <div class="mp-step">
+                <div class="mp-num">6</div>
+                <div class="mp-body">
+                  <strong>Verdict</strong>
+                  <p>Posterior probability with uncertainty bounds. For scans: per-game flags, convergence curve, changepoint detection.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. MODEL VALIDATION -->
+        <div class="method-block">
+          <div class="method-card">
+            <span class="method-tag">Validation</span>
+            <h3>Does it actually work?</h3>
+            <p>A model that hasn't been tested against reality is just a theory. We validated against <strong>known outcomes</strong> &mdash; games where we know the ground truth.</p>
+
+            <div class="method-validation-grid">
+              <div class="mv-category">
+                <h4>False positive control</h4>
+                <div class="mv-items">
+                  <div class="mv-item mv-good">
+                    <span class="mv-val">0%</span>
+                    <span class="mv-desc">false positive rate on 3,000 corpus games at 50% threshold</span>
+                  </div>
+                  <div class="mv-item mv-good">
+                    <span class="mv-val">0%</span>
+                    <span class="mv-desc">false positive rate on 20 out-of-sample GM games</span>
+                  </div>
+                  <div class="mv-item mv-good">
+                    <span class="mv-val">1.70%</span>
+                    <span class="mv-desc">Fischer&ndash;Spassky 1972 Game 6 &mdash; one of the greatest games ever played</span>
+                  </div>
+                  <div class="mv-item mv-good">
+                    <span class="mv-val">0.28%</span>
+                    <span class="mv-desc">Kasparov&ndash;Topalov 1999 &mdash; "Kasparov's Immortal"</span>
+                  </div>
+                  <div class="mv-item mv-good">
+                    <span class="mv-val">1.07%</span>
+                    <span class="mv-desc">Niemann at 2022 Sinquefield Cup &mdash; no evidence of assistance</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mv-category">
+                <h4>Known cheater detection</h4>
+                <div class="mv-items">
+                  <div class="mv-item mv-flagged">
+                    <span class="mv-val">99.4%</span>
+                    <span class="mv-desc">Borislav Ivanov, Zadar 2012 &mdash; 9 games, beat 4 GMs rated 2227</span>
+                  </div>
+                  <div class="mv-item mv-flagged">
+                    <span class="mv-val">+5.4 dB</span>
+                    <span class="mv-desc">S&eacute;bastien Feller, 2010 Olympiad &mdash; SMS relay, 8 games</span>
+                  </div>
+                  <div class="mv-item mv-warn">
+                    <span class="mv-val">5.5%</span>
+                    <span class="mv-desc">Igors Rausis, Czech Extraliga 2019 &mdash; caught with phone in toilet</span>
+                  </div>
+                  <div class="mv-item mv-warn">
+                    <span class="mv-val">+3.6 dB</span>
+                    <span class="mv-desc">Gaioz Nigalidze, Dubai 2015 Round 6 &mdash; the game where he was caught</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mv-category">
+                <h4>Detection power</h4>
+                <div class="mv-items">
+                  <div class="mv-item mv-stat">
+                    <span class="mv-val">2 games</span>
+                    <span class="mv-desc">needed to reach 95% confidence at full engine assistance</span>
+                  </div>
+                  <div class="mv-item mv-stat">
+                    <span class="mv-val">~7 games</span>
+                    <span class="mv-desc">needed at 50% assistance rate (every other move)</span>
+                  </div>
+                  <div class="mv-item mv-stat">
+                    <span class="mv-val">139</span>
+                    <span class="mv-desc">automated tests pass &mdash; covering calibration, detection, and false positives</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p style="margin-top:16px">The hardest case is <strong>partial cheating by strong players</strong>. Feller (GM, 2649) used intermittent SMS relay &mdash; individually each game is ambiguous, but the per-player mixture model correctly accumulates weak signals across 8 games into a positive detection. This is exactly what the system was designed for.</p>
+          </div>
+        </div>
+
+        <!-- 8. TRY IT / GITHUB -->
+        <div class="method-block">
+          <div class="method-card" style="text-align:center">
+            <h3>Open source &mdash; inspect everything</h3>
+            <p style="max-width:500px;margin:0 auto 24px">Every line of analysis code is public. The baseline corpus, the fitted model, the signal weights &mdash; nothing is hidden. Fork it, improve it, challenge it.</p>
+            <div class="method-cta-row">
+              <button class="btn-cosmic" id="method-cta" style="width:auto;padding:14px 40px">Try it now</button>
+              <a href="https://github.com/PLACEHOLDER/ChessForensics" target="_blank" rel="noopener" class="btn-ghost hero-scroll" id="github-link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right:8px;vertical-align:middle"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                View on GitHub
+              </a>
+            </div>
+            <p style="margin-top:20px;font-size:13px;color:var(--fg-3)">
+              Based on the research of Prof. Kenneth Regan (University at Buffalo), who pioneered statistical cheat detection in chess.
+              <br>See the <a href="#cases-section" style="color:var(--cyan)">documented cases</a> for validated examples.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FOOTER -->
+      <footer class="landing-footer">
+        <div class="footer-inner">
+          <span class="logo-sm">CHESS FORENSICS</span>
+          <p>Open-source Bayesian cheat detection. Built with Stockfish, Python, and honest statistics.</p>
+          <a href="https://github.com/PLACEHOLDER/ChessForensics" target="_blank" rel="noopener" style="color:var(--cyan);font-size:13px;text-decoration:none" id="github-link-footer">GitHub</a>
+        </div>
+      </footer>
+
+    </section>
+    <div id="report" hidden></div>
+  </div>
+
+</div>
+
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+engines/
+*.egg-info/
+dist/
+build/
+.env
+config.json
+
+# Cache is huge (3GB+)
+cache/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Keep only needed baselines
+baselines/*.json
+!baselines/default.json
+!baselines/model_v1.json
+
+# Not needed for deploy
+paper/
+scripts/
+*.pdf
+ChessForensics_Complete_Report.txt
