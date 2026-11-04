@@ -1,0 +1,1081 @@
+{
+  "honest": {
+    "M1_t1_only": {
+      "n": 5000,
+      "median_db": -10.752775315375185,
+      "mean_db": -10.55263143960343,
+      "std_db": 11.082914292075719
+    },
+    "M2_regan": {
+      "n": 5000,
+      "median_db": -16.91796775870148,
+      "mean_db": -18.743141891615938,
+      "std_db": 16.89285174539445
+    },
+    "M3_regan_cal": {
+      "n": 5000,
+      "median_db": -16.734814055166435,
+      "mean_db": -17.97806389111153,
+      "std_db": 14.201727919445311
+    },
+    "M4_full": {
+      "n": 5000,
+      "median_db": -3.2848965687645144,
+      "mean_db": -2.9071514880847538,
+      "std_db": 3.6719512386382704
+    },
+    "M5_permove": {
+      "n": 5000,
+      "median_db": -6.522099084654394,
+      "mean_db": -5.8950361342074755,
+      "std_db": 5.58194283402248
+    }
+  },
+  "thresholds": {
+    "M1_t1_only": {
+      "fpr_1pct": 16.32791456121145,
+      "fpr_01pct": 23.19798959874775,
+      "fpr_001pct": 27.570691290337997
+    },
+    "M2_regan": {
+      "fpr_1pct": 13.022597003468592,
+      "fpr_01pct": 20.68839976728874,
+      "fpr_001pct": 25.55105548189634
+    },
+    "M3_regan_cal": {
+      "fpr_1pct": 9.663382586421733,
+      "fpr_01pct": 16.393646978472724,
+      "fpr_001pct": 21.293947794607153
+    },
+    "M4_full": {
+      "fpr_1pct": 8.697976074227702,
+      "fpr_01pct": 15.11014220135687,
+      "fpr_001pct": 21.081407274379853
+    },
+    "M5_permove": {
+      "fpr_1pct": 12.34487906324774,
+      "fpr_01pct": 20.82204596259478,
+      "fpr_001pct": 26.536802142185575
+    }
+  },
+  "synthetic": {
+    "uniform_r0.1": {
+      "variant": "uniform",
+      "rate": 0.1,
+      "M1_t1_only": {
+        "n": 5000,
+        "median_db": -4.321010676001017,
+        "tpr_at_1pct_fpr": 0.0314,
+        "tpr_at_01pct_fpr": 0.0044,
+        "tpr_at_001pct_fpr": 0.0012
+      },
+      "M2_regan": {
+        "n": 5000,
+        "median_db": -9.702664349231956,
+        "tpr_at_1pct_fpr": 0.0312,
+        "tpr_at_01pct_fpr": 0.0042,
+        "tpr_at_001pct_fpr": 0.001
+      },
+      "M3_regan_cal": {
+        "n": 5000,
+        "median_db": -10.263642798419486,
+        "tpr_at_1pct_fpr": 0.0346,
+        "tpr_at_01pct_fpr": 0.0048,
+        "tpr_at_001pct_fpr": 0.001
+      },
+      "M4_full": {
+        "n": 5000,
+        "median_db": -1.4521954743404104,
+        "tpr_at_1pct_fpr": 0.0236,
+        "tpr_at_01pct_fpr": 0.004,
+        "tpr_at_001pct_fpr": 0.0004
+      },
+      "M5_permove": {
+        "n": 5000,
+        "median_db": -2.8834103692858166,
+        "tpr_at_1pct_fpr": 0.0346,
+        "tpr_at_01pct_fpr": 0.0074,
+        "tpr_at_001pct_fpr": 0.0022
+      }
+    },
+    "uniform_r0.25": {
+      "variant": "uniform",
+      "rate": 0.25,
+      "M1_t1_only": {
+        "n": 5000,
+        "median_db": 5.529803504320601,
+        "tpr_at_1pct_fpr": 0.1466,
+        "tpr_at_01pct_fpr": 0.0464,
+        "tpr_at_001pct_fpr": 0.017
+      },
+      "M2_regan": {
+        "n": 5000,
+        "median_db": 0.9428127851015773,
+        "tpr_at_1pct_fpr": 0.1428,
+        "tpr_at_01pct_fpr": 0.04,
+        "tpr_at_001pct_fpr": 0.0148
+      },
+      "M3_regan_cal": {
+        "n": 5000,
+        "median_db": -0.6864634709262445,
+        "tpr_at_1pct_fpr": 0.1522,
+        "tpr_at_01pct_fpr": 0.0466,
+        "tpr_at_001pct_fpr": 0.0144
+      },
+      "M4_full": {
+        "n": 5000,
+        "median_db": 1.7475364446632744,
+        "tpr_at_1pct_fpr": 0.1046,
+        "tpr_at_01pct_fpr": 0.0218,
+        "tpr_at_001pct_fpr": 0.0062
+      },
+      "M5_permove": {
+        "n": 5000,
+        "median_db": 4.2104429769078,
+        "tpr_at_1pct_fpr": 0.1972,
+        "tpr_at_01pct_fpr": 0.068,
+        "tpr_at_001pct_fpr": 0.0348
+      }
+    },
+    "uniform_r0.5": {
+      "variant": "uniform",
+      "rate": 0.5,
+      "M1_t1_only": {
+        "n": 5000,
+        "median_db": 21.463056382094337,
+        "tpr_at_1pct_fpr": 0.6956,
+        "tpr_at_01pct_fpr": 0.4312,
+        "tpr_at_001pct_fpr": 0.2786
+      },
+      "M2_regan": {
+        "n": 5000,
+        "median_db": 17.906518006445104,
+        "tpr_at_1pct_fpr": 0.6708,
+        "tpr_at_01pct_fpr": 0.399,
+        "tpr_at_001pct_fpr": 0.2512
+      },
+      "M3_regan_cal": {
+        "n": 5000,
+        "median_db": 14.49930628954621,
+        "tpr_at_1pct_fpr": 0.6848,
+        "tpr_at_01pct_fpr": 0.4234,
+        "tpr_at_001pct_fpr": 0.2544
+      },
+      "M4_full": {
+        "n": 5000,
+        "median_db": 9.780614756895453,
+        "tpr_at_1pct_fpr": 0.554,
+        "tpr_at_01pct_fpr": 0.2714,
+        "tpr_at_001pct_fpr": 0.1152
+      },
+      "M5_permove": {
+        "n": 5000,
+        "median_db": 23.67701921920972,
+        "tpr_at_1pct_fpr": 0.7918,
+        "tpr_at_01pct_fpr": 0.5686,
+        "tpr_at_001pct_fpr": 0.4334
+      }
+    },
+    "uniform_r1.0": {
+      "variant": "uniform",
+      "rate": 1.0,
+      "M1_t1_only": {
+        "n": 5000,
+        "median_db": 52.319682045547495,
+        "tpr_at_1pct_fpr": 1.0,
+        "tpr_at_01pct_fpr": 1.0,
+        "tpr_at_001pct_fpr": 1.0
+      },
+      "M2_regan": {
+        "n": 5000,
+        "median_db": 50.96627510720006,
+        "tpr_at_1pct_fpr": 1.0,
+        "tpr_at_01pct_fpr": 1.0,
+        "tpr_at_001pct_fpr": 1.0
+      },
+      "M3_regan_cal": {
+        "n": 5000,
+        "median_db": 44.135177614011035,
+        "tpr_at_1pct_fpr": 1.0,
+        "tpr_at_01pct_fpr": 1.0,
+        "tpr_at_001pct_fpr": 1.0
+      },
+      "M4_full": {
+        "n": 5000,
+        "median_db": 43.01341401061758,
+        "tpr_at_1pct_fpr": 1.0,
+        "tpr_at_01pct_fpr": 1.0,
+        "tpr_at_001pct_fpr": 1.0
+      },
+      "M5_permove": {
+        "n": 5000,
+        "median_db": 125.00677982023711,
+        "tpr_at_1pct_fpr": 1.0,
+        "tpr_at_01pct_fpr": 0.9998,
+        "tpr_at_001pct_fpr": 0.9996
+      }
+    }
+  },
+  "paired": {
+    "uniform_r0.25_fpr_1pct": {
+      "mcnemar": {
+        "p_value": 1.1480526347462185e-27,
+        "odds_ratio": 2.4863387978142075,
+        "ci_low": 2.094350976605927,
+        "ci_high": 2.951692761417888,
+        "a_only": 455,
+        "b_only": 183,
+        "both": 531,
+        "neither": 3831
+      },
+      "bootstrap": {
+        "diff": 0.054399999999999976,
+        "ci_low": 0.0446,
+        "ci_high": 0.06420000000000001,
+        "n": 5000
+      }
+    },
+    "uniform_r0.25_fpr_01pct": {
+      "mcnemar": {
+        "p_value": 4.473254890264307e-19,
+        "odds_ratio": 3.413793103448276,
+        "ci_low": 2.5476894942763977,
+        "ci_high": 4.574334266139057,
+        "a_only": 198,
+        "b_only": 58,
+        "both": 142,
+        "neither": 4602
+      },
+      "bootstrap": {
+        "diff": 0.028000000000000004,
+        "ci_low": 0.021999999999999992,
+        "ci_high": 0.03439999999999999,
+        "n": 5000
+      }
+    },
+    "uniform_r0.25_fpr_001pct": {
+      "mcnemar": {
+        "p_value": 6.691287683282994e-20,
+        "odds_ratio": 7.25,
+        "ci_low": 4.298643905887157,
+        "ci_high": 12.227693465842485,
+        "a_only": 116,
+        "b_only": 16,
+        "both": 58,
+        "neither": 4810
+      },
+      "bootstrap": {
+        "diff": 0.019999999999999997,
+        "ci_low": 0.0156,
+        "ci_high": 0.024599999999999997,
+        "n": 5000
+      }
+    },
+    "uniform_r0.25_pauc": {
+      "diff": 0.0002789600000000005,
+      "ci_low": 7.087499999999993e-05,
+      "ci_high": 0.0005218079999999999,
+      "pauc_a": 0.0012379400000000005,
+      "pauc_b": 0.00095898
+    },
+    "uniform_r0.5_fpr_1pct": {
+      "mcnemar": {
+        "p_value": 1.4202253186564319e-89,
+        "odds_ratio": 4.27027027027027,
+        "ci_low": 3.638563824917555,
+        "ci_high": 5.011649941736919,
+        "a_only": 790,
+        "b_only": 185,
+        "both": 3169,
+        "neither": 856
+      },
+      "bootstrap": {
+        "diff": 0.121,
+        "ci_low": 0.10940000000000005,
+        "ci_high": 0.13279999999999992,
+        "n": 5000
+      }
+    },
+    "uniform_r0.5_fpr_01pct": {
+      "mcnemar": {
+        "p_value": 8.957872493918366e-153,
+        "odds_ratio": 6.5064935064935066,
+        "ci_low": 5.491249334914266,
+        "ci_high": 7.709440086953021,
+        "a_only": 1002,
+        "b_only": 154,
+        "both": 1841,
+        "neither": 2003
+      },
+      "bootstrap": {
+        "diff": 0.16959999999999997,
+        "ci_low": 0.1572,
+        "ci_high": 0.18180000000000002,
+        "n": 5000
+      }
+    },
+    "uniform_r0.5_fpr_001pct": {
+      "mcnemar": {
+        "p_value": 2.934577832959689e-189,
+        "odds_ratio": 9.931372549019608,
+        "ci_low": 8.101859232465898,
+        "ci_high": 12.174015602761873,
+        "a_only": 1013,
+        "b_only": 102,
+        "both": 1154,
+        "neither": 2731
+      },
+      "bootstrap": {
+        "diff": 0.18220000000000003,
+        "ci_low": 0.17000000000000004,
+        "ci_high": 0.1944,
+        "n": 5000
+      }
+    },
+    "uniform_r0.5_pauc": {
+      "diff": 0.0012418199999999994,
+      "ci_low": 0.0007780452499999995,
+      "ci_high": 0.0017226699999999997,
+      "pauc_a": 0.00678806,
+      "pauc_b": 0.005546240000000001
+    },
+    "uniform_r1.0_fpr_1pct": {
+      "mcnemar": {
+        "p_value": 1.0,
+        "odds_ratio": 1.0,
+        "ci_low": 0.0,
+        "ci_high": Infinity,
+        "a_only": 0,
+        "b_only": 0,
+        "both": 5000,
+        "neither": 0
+      },
+      "bootstrap": {
+        "diff": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n": 5000
+      }
+    },
+    "uniform_r1.0_fpr_01pct": {
+      "mcnemar": {
+        "p_value": 1.0,
+        "odds_ratio": 0.0,
+        "ci_low": 0.0,
+        "ci_high": Infinity,
+        "a_only": 0,
+        "b_only": 1,
+        "both": 4999,
+        "neither": 0
+      },
+      "bootstrap": {
+        "diff": -0.00019999999999997797,
+        "ci_low": -0.0006000000000000449,
+        "ci_high": 0.0,
+        "n": 5000
+      }
+    },
+    "uniform_r1.0_fpr_001pct": {
+      "mcnemar": {
+        "p_value": 0.5,
+        "odds_ratio": 0.0,
+        "ci_low": 0.0,
+        "ci_high": Infinity,
+        "a_only": 0,
+        "b_only": 2,
+        "both": 4998,
+        "neither": 0
+      },
+      "bootstrap": {
+        "diff": -0.00039999999999995595,
+        "ci_low": -0.0010000000000000009,
+        "ci_high": 0.0,
+        "n": 5000
+      }
+    },
+    "uniform_r1.0_pauc": {
+      "diff": -6.800000000011658e-07,
+      "ci_low": -2.2800000000003373e-06,
+      "ci_high": 0.0,
+      "pauc_a": 0.009999319999999999,
+      "pauc_b": 0.01
+    }
+  },
+  "aggregation": {
+    "r0.1_n2": {
+      "rate": 0.1,
+      "n_games": 2,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": -9.188987612353127,
+        "mean_db": -8.59271891855507,
+        "tpr_above_zero": 0.298
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": -21.022642841481797,
+        "mean_db": -24.39437077271706,
+        "tpr_above_zero": 0.136
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": -22.07751754177987,
+        "mean_db": -24.23388650168588,
+        "tpr_above_zero": 0.09
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": -1.5901200226158412,
+        "mean_db": -1.0152675843454302,
+        "tpr_above_zero": 0.356
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": -2.8912864639964706,
+        "mean_db": -1.4987751558439335,
+        "tpr_above_zero": 0.346
+      }
+    },
+    "r0.1_n4": {
+      "rate": 0.1,
+      "n_games": 4,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": -14.990907813107167,
+        "mean_db": -14.465680938046699,
+        "tpr_above_zero": 0.248
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": -41.55540973243125,
+        "mean_db": -45.14933194400974,
+        "tpr_above_zero": 0.082
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": -43.17081985756516,
+        "mean_db": -45.127452070868785,
+        "tpr_above_zero": 0.052
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": -0.884710983595318,
+        "mean_db": -0.062442438316457016,
+        "tpr_above_zero": 0.442
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 0.024784187933001352,
+        "mean_db": 1.64567165144672,
+        "tpr_above_zero": 0.502
+      }
+    },
+    "r0.1_n8": {
+      "rate": 0.1,
+      "n_games": 8,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": -28.50685338206418,
+        "mean_db": -28.687821800567647,
+        "tpr_above_zero": 0.176
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": -85.10498968583013,
+        "mean_db": -87.65187460429082,
+        "tpr_above_zero": 0.012
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": -88.42815796180327,
+        "mean_db": -88.19670529342338,
+        "tpr_above_zero": 0.004
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 1.3027358064175916,
+        "mean_db": 2.0429925471636587,
+        "tpr_above_zero": 0.574
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 4.387066125315317,
+        "mean_db": 6.1846202736251845,
+        "tpr_above_zero": 0.666
+      }
+    },
+    "r0.1_n13": {
+      "rate": 0.1,
+      "n_games": 13,
+      "M1_t1_only": {
+        "n_players": 384,
+        "median_db": -52.5674948421798,
+        "mean_db": -55.00684054265995,
+        "tpr_above_zero": 0.059895833333333336
+      },
+      "M2_regan": {
+        "n_players": 384,
+        "median_db": -150.7559651089038,
+        "mean_db": -153.2549392529706,
+        "tpr_above_zero": 0.0026041666666666665
+      },
+      "M3_regan_cal": {
+        "n_players": 384,
+        "median_db": -150.20438809793822,
+        "mean_db": -153.11049390181287,
+        "tpr_above_zero": 0.0
+      },
+      "M4_full": {
+        "n_players": 384,
+        "median_db": 2.8528074098846554,
+        "mean_db": 4.019055156282099,
+        "tpr_above_zero": 0.6041666666666666
+      },
+      "M5_permove": {
+        "n_players": 384,
+        "median_db": 11.26370742304784,
+        "mean_db": 11.187483954293931,
+        "tpr_above_zero": 0.7760416666666666
+      }
+    },
+    "r0.25_n2": {
+      "rate": 0.25,
+      "n_games": 2,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": 11.011998701465918,
+        "mean_db": 11.767590026513538,
+        "tpr_above_zero": 0.796
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": 1.5783792306729445,
+        "mean_db": -1.5240773656131588,
+        "tpr_above_zero": 0.538
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": -1.7195375477103871,
+        "mean_db": -3.8726633490876705,
+        "tpr_above_zero": 0.444
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 5.353983019626275,
+        "mean_db": 5.716138265005592,
+        "tpr_above_zero": 0.816
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 10.870771963307897,
+        "mean_db": 13.392952251352366,
+        "tpr_above_zero": 0.912
+      }
+    },
+    "r0.25_n4": {
+      "rate": 0.25,
+      "n_games": 4,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": 22.5247490417415,
+        "mean_db": 22.66940690171551,
+        "tpr_above_zero": 0.872
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": 0.7510395773320695,
+        "mean_db": -2.9189368564712597,
+        "tpr_above_zero": 0.504
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": -5.167259361931701,
+        "mean_db": -7.603350714477551,
+        "tpr_above_zero": 0.422
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 10.965841410806078,
+        "mean_db": 11.418809172126162,
+        "tpr_above_zero": 0.904
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 26.720712905844294,
+        "mean_db": 28.114714767779436,
+        "tpr_above_zero": 0.992
+      }
+    },
+    "r0.25_n8": {
+      "rate": 0.25,
+      "n_games": 8,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": 44.0903058714146,
+        "mean_db": 44.70578210051028,
+        "tpr_above_zero": 0.932
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": -1.589076464823166,
+        "mean_db": -6.539005944676791,
+        "tpr_above_zero": 0.478
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": -12.931803562546596,
+        "mean_db": -15.833346238113963,
+        "tpr_above_zero": 0.352
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 22.306710271765084,
+        "mean_db": 24.12722226874179,
+        "tpr_above_zero": 0.98
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 58.54108673119576,
+        "mean_db": 60.37918493185314,
+        "tpr_above_zero": 1.0
+      }
+    },
+    "r0.25_n13": {
+      "rate": 0.25,
+      "n_games": 13,
+      "M1_t1_only": {
+        "n_players": 384,
+        "median_db": 72.53157196784386,
+        "mean_db": 72.04937901602331,
+        "tpr_above_zero": 0.9817708333333334
+      },
+      "M2_regan": {
+        "n_players": 384,
+        "median_db": -11.044350204218581,
+        "mean_db": -13.251576555335747,
+        "tpr_above_zero": 0.4322916666666667
+      },
+      "M3_regan_cal": {
+        "n_players": 384,
+        "median_db": -25.63584234284017,
+        "mean_db": -28.055307423929552,
+        "tpr_above_zero": 0.2786458333333333
+      },
+      "M4_full": {
+        "n_players": 384,
+        "median_db": 36.83218228745733,
+        "mean_db": 37.75450683856719,
+        "tpr_above_zero": 1.0
+      },
+      "M5_permove": {
+        "n_players": 384,
+        "median_db": 98.70814701450239,
+        "mean_db": 98.7049376135269,
+        "tpr_above_zero": 1.0
+      }
+    },
+    "r0.5_n2": {
+      "rate": 0.5,
+      "n_games": 2,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": 44.09254183177831,
+        "mean_db": 44.47386561960484,
+        "tpr_above_zero": 1.0
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": 35.27489726300341,
+        "mean_db": 34.92936205408827,
+        "tpr_above_zero": 0.952
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": 28.81380106440254,
+        "mean_db": 28.679307783315988,
+        "tpr_above_zero": 0.954
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 22.157050092063034,
+        "mean_db": 23.3651798689917,
+        "tpr_above_zero": 0.986
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 54.577855569897494,
+        "mean_db": 59.00416690404338,
+        "tpr_above_zero": 1.0
+      }
+    },
+    "r0.5_n4": {
+      "rate": 0.5,
+      "n_games": 4,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": 87.91068676865842,
+        "mean_db": 87.63083690416623,
+        "tpr_above_zero": 1.0
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": 71.24766778651266,
+        "mean_db": 69.99050751844759,
+        "tpr_above_zero": 0.986
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": 58.49062865654962,
+        "mean_db": 57.32977466459235,
+        "tpr_above_zero": 0.984
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 46.63726595146832,
+        "mean_db": 47.35990751279202,
+        "tpr_above_zero": 0.998
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 119.07398072355777,
+        "mean_db": 121.78696148852026,
+        "tpr_above_zero": 1.0
+      }
+    },
+    "r0.5_n8": {
+      "rate": 0.5,
+      "n_games": 8,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": 177.54573787834767,
+        "mean_db": 176.3751406249043,
+        "tpr_above_zero": 1.0
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": 143.12965682313074,
+        "mean_db": 137.01847188780562,
+        "tpr_above_zero": 0.998
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": 115.79345395021654,
+        "mean_db": 112.47219299894033,
+        "tpr_above_zero": 0.996
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 94.45465633694432,
+        "mean_db": 96.1851266107744,
+        "tpr_above_zero": 1.0
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 247.3832022417214,
+        "mean_db": 249.85808314967608,
+        "tpr_above_zero": 1.0
+      }
+    },
+    "r0.5_n13": {
+      "rate": 0.5,
+      "n_games": 13,
+      "M1_t1_only": {
+        "n_players": 384,
+        "median_db": 286.78529435572824,
+        "mean_db": 285.78362624346454,
+        "tpr_above_zero": 1.0
+      },
+      "M2_regan": {
+        "n_players": 384,
+        "median_db": 229.43393468853765,
+        "mean_db": 225.4643570852362,
+        "tpr_above_zero": 1.0
+      },
+      "M3_regan_cal": {
+        "n_players": 384,
+        "median_db": 186.3325587306208,
+        "mean_db": 184.6484326550432,
+        "tpr_above_zero": 1.0
+      },
+      "M4_full": {
+        "n_players": 384,
+        "median_db": 155.3574971164208,
+        "mean_db": 157.17424168672764,
+        "tpr_above_zero": 1.0
+      },
+      "M5_permove": {
+        "n_players": 384,
+        "median_db": 405.8280316401733,
+        "mean_db": 409.6755856919021,
+        "tpr_above_zero": 1.0
+      }
+    },
+    "r1.0_n2": {
+      "rate": 1.0,
+      "n_games": 2,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": 108.57574249137735,
+        "mean_db": 109.57722294493287,
+        "tpr_above_zero": 1.0
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": 103.72951298301022,
+        "mean_db": 102.75436556820792,
+        "tpr_above_zero": 1.0
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": 92.21884778671877,
+        "mean_db": 91.40405128962978,
+        "tpr_above_zero": 1.0
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 95.11587987992621,
+        "mean_db": 94.62577848043786,
+        "tpr_above_zero": 1.0
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 278.17012795453434,
+        "mean_db": 288.2453766874307,
+        "tpr_above_zero": 1.0
+      }
+    },
+    "r1.0_n4": {
+      "rate": 1.0,
+      "n_games": 4,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": 215.9624872105988,
+        "mean_db": 216.78498775910526,
+        "tpr_above_zero": 1.0
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": 204.40137560673577,
+        "mean_db": 204.35145544130444,
+        "tpr_above_zero": 1.0
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": 180.6585988161657,
+        "mean_db": 180.85445055221797,
+        "tpr_above_zero": 1.0
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 193.53125948051832,
+        "mean_db": 193.47496875939098,
+        "tpr_above_zero": 1.0
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 556.5719907238802,
+        "mean_db": 569.4296356894822,
+        "tpr_above_zero": 1.0
+      }
+    },
+    "r1.0_n8": {
+      "rate": 1.0,
+      "n_games": 8,
+      "M1_t1_only": {
+        "n_players": 500,
+        "median_db": 437.306095178475,
+        "mean_db": 436.26337655797045,
+        "tpr_above_zero": 1.0
+      },
+      "M2_regan": {
+        "n_players": 500,
+        "median_db": 411.1267586349114,
+        "mean_db": 410.05948039183534,
+        "tpr_above_zero": 1.0
+      },
+      "M3_regan_cal": {
+        "n_players": 500,
+        "median_db": 364.0251625880721,
+        "mean_db": 363.63223900662985,
+        "tpr_above_zero": 1.0
+      },
+      "M4_full": {
+        "n_players": 500,
+        "median_db": 395.5072510594599,
+        "mean_db": 394.766785821163,
+        "tpr_above_zero": 1.0
+      },
+      "M5_permove": {
+        "n_players": 500,
+        "median_db": 1149.6779590650003,
+        "mean_db": 1150.9670185699094,
+        "tpr_above_zero": 1.0
+      }
+    },
+    "r1.0_n13": {
+      "rate": 1.0,
+      "n_games": 13,
+      "M1_t1_only": {
+        "n_players": 384,
+        "median_db": 705.4899602961168,
+        "mean_db": 708.3435289938419,
+        "tpr_above_zero": 1.0
+      },
+      "M2_regan": {
+        "n_players": 384,
+        "median_db": 664.33221636863,
+        "mean_db": 665.4443027504968,
+        "tpr_above_zero": 1.0
+      },
+      "M3_regan_cal": {
+        "n_players": 384,
+        "median_db": 588.5932327863965,
+        "mean_db": 590.0052047976632,
+        "tpr_above_zero": 1.0
+      },
+      "M4_full": {
+        "n_players": 384,
+        "median_db": 644.1583873118458,
+        "mean_db": 644.5433223966869,
+        "tpr_above_zero": 1.0
+      },
+      "M5_permove": {
+        "n_players": 384,
+        "median_db": 1862.9638003901077,
+        "mean_db": 1882.5484492006635,
+        "tpr_above_zero": 1.0
+      }
+    }
+  },
+  "null": {
+    "null_n4": {
+      "n_games": 4,
+      "M1_t1_only": {
+        "n_players": 1000,
+        "median_db": -42.536750802431385,
+        "std_db": 21.57589135597116,
+        "p99": 11.760673534272165,
+        "p999": 32.80217795007492,
+        "fpr_above_zero": 0.03
+      },
+      "M2_regan": {
+        "n_players": 1000,
+        "median_db": -71.16274143879264,
+        "std_db": 32.88602221974323,
+        "p99": -7.146295231252594,
+        "p999": 20.954511323883615,
+        "fpr_above_zero": 0.006
+      },
+      "M3_regan_cal": {
+        "n_players": 1000,
+        "median_db": -69.5441150956925,
+        "std_db": 27.579651089920624,
+        "p99": -12.740773356427804,
+        "p999": 11.898652609594476,
+        "fpr_above_zero": 0.003
+      },
+      "M4_full": {
+        "n_players": 1000,
+        "median_db": -6.320787814477997,
+        "std_db": 4.849837354956547,
+        "p99": 6.9900903788459114,
+        "p999": 15.989105776160931,
+        "fpr_above_zero": 0.107
+      },
+      "M5_permove": {
+        "n_players": 1000,
+        "median_db": -11.781536939014162,
+        "std_db": 8.009834225115908,
+        "p99": 7.900237390088824,
+        "p999": 16.370907531399954,
+        "fpr_above_zero": 0.068
+      }
+    },
+    "null_n9": {
+      "n_games": 9,
+      "M1_t1_only": {
+        "n_players": 555,
+        "median_db": -96.63286172158149,
+        "std_db": 32.73908967687978,
+        "p99": -23.370348401370723,
+        "p999": null,
+        "fpr_above_zero": 0.0018018018018018018
+      },
+      "M2_regan": {
+        "n_players": 555,
+        "median_db": -166.57715708137388,
+        "std_db": 50.10019021146457,
+        "p99": -67.45781913131763,
+        "p999": null,
+        "fpr_above_zero": 0.0
+      },
+      "M3_regan_cal": {
+        "n_players": 555,
+        "median_db": -161.1292951206479,
+        "std_db": 41.99895135212732,
+        "p99": -73.47541978835937,
+        "p999": null,
+        "fpr_above_zero": 0.0
+      },
+      "M4_full": {
+        "n_players": 555,
+        "median_db": -8.578580267806878,
+        "std_db": 5.71231138994638,
+        "p99": 6.569102966154385,
+        "p999": null,
+        "fpr_above_zero": 0.06486486486486487
+      },
+      "M5_permove": {
+        "n_players": 555,
+        "median_db": -19.623798123246186,
+        "std_db": 11.538938607558723,
+        "p99": 6.727796600592089,
+        "p999": null,
+        "fpr_above_zero": 0.04684684684684685
+      }
+    },
+    "null_n13": {
+      "n_games": 13,
+      "M1_t1_only": {
+        "n_players": 384,
+        "median_db": -137.54370992231355,
+        "std_db": 42.86222081411687,
+        "p99": -38.794868354294614,
+        "p999": null,
+        "fpr_above_zero": 0.0
+      },
+      "M2_regan": {
+        "n_players": 384,
+        "median_db": -242.9687933093238,
+        "std_db": 64.23238861311546,
+        "p99": -102.60204305053979,
+        "p999": null,
+        "fpr_above_zero": 0.0
+      },
+      "M3_regan_cal": {
+        "n_players": 384,
+        "median_db": -232.73299660398794,
+        "std_db": 54.20315128771219,
+        "p99": -113.03465635495127,
+        "p999": null,
+        "fpr_above_zero": 0.0
+      },
+      "M4_full": {
+        "n_players": 384,
+        "median_db": -9.89343934572599,
+        "std_db": 6.875112467362275,
+        "p99": 5.080548681628588,
+        "p999": null,
+        "fpr_above_zero": 0.0859375
+      },
+      "M5_permove": {
+        "n_players": 384,
+        "median_db": -24.855704618303413,
+        "std_db": 15.186741974349742,
+        "p99": 11.19884571769804,
+        "p999": null,
+        "fpr_above_zero": 0.049479166666666664
+      }
+    }
+  }
+}
