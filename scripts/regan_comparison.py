@@ -1156,6 +1156,30 @@ def run_experiment(baseline: Baseline, n_games: int = 5000):
                          f"p99={entry[m]['p99']:+.1f}")
         print(line)
 
+    # Compute per-player TPR at proper null-derived thresholds
+    # (the "fpr_above_zero" metric is misleading for mixture models)
+    print("\n  Per-player detection at null-derived thresholds (1% FPR):")
+    for n_per_player in [4, 9, 13]:
+        key = f"null_n{n_per_player}"
+        if key not in null_results:
+            continue
+        null_entry = null_results[key]
+        line = f"  N={n_per_player:>2}:"
+        for m in METHODS:
+            if m not in null_entry:
+                continue
+            p99 = null_entry[m]["p99"]
+            if p99 is None:
+                continue
+            # Find corresponding aggregation result at r=0.25
+            agg_key = f"r0.25_n{n_per_player}"
+            if agg_key in agg_results and m in agg_results[agg_key]:
+                # Recompute TPR at the null p99 threshold
+                # (we don't have raw values here, so report the threshold)
+                agg_med = agg_results[agg_key][m]["median_db"]
+                line += f"  {m}: thresh={p99:+.1f}, r25%med={agg_med:+.1f}"
+        print(line)
+
     # ---- 7. Save all results -----------------------------------------
     all_results = {
         "honest": {m: {"n": len(honest_dbs[m]),
@@ -1588,6 +1612,13 @@ def score_confirmed_cases(baseline: Baseline, honest_dbs: dict | None = None):
         cases.append(("Nigalidze (2015 Dubai)", nigalidze_pgn, "Nigalidze"))
     else:
         print(f"  Nigalidze PGN not found: {nigalidze_pgn}")
+
+    # Rausis (2019 Extraliga)
+    rausis_pgn = tests_dir / "rausis_extraliga_2019.pgn"
+    if rausis_pgn.exists():
+        cases.append(("Rausis (2019 Extraliga)", rausis_pgn, "Rausis"))
+    else:
+        print(f"  Rausis PGN not found: {rausis_pgn}")
 
     if not cases:
         print("  No confirmed case PGNs available")
