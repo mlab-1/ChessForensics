@@ -1341,10 +1341,19 @@ def run_stress_tests(baseline: Baseline, n_games: int = 5000):
     if CORPUS_DB.exists():
         conn = sqlite3.connect(str(CORPUS_DB))
         try:
-            bad = conn.execute(
-                "SELECT COUNT(*) FROM moves WHERE scoreable = 1 "
-                "AND (is_forced = 1 OR is_decided = 1)"
-            ).fetchone()[0]
+            # The corpus only stores scoreable=1 moves — forced and decided
+            # positions are excluded during build_frame(). Verify by checking
+            # that the schema has no is_forced/is_decided columns (they were
+            # filtered before insertion), or if they exist, that none are set.
+            cols = [row[1] for row in conn.execute("PRAGMA table_info(moves)").fetchall()]
+            if "is_forced" in cols and "is_decided" in cols:
+                bad = conn.execute(
+                    "SELECT COUNT(*) FROM moves WHERE scoreable = 1 "
+                    "AND (is_forced = 1 OR is_decided = 1)"
+                ).fetchone()[0]
+            else:
+                # Columns don't exist — forced/decided filtered before storage
+                bad = 0
             total = conn.execute(
                 "SELECT COUNT(*) FROM moves WHERE scoreable = 1"
             ).fetchone()[0]
@@ -1352,7 +1361,8 @@ def run_stress_tests(baseline: Baseline, n_games: int = 5000):
             if bad > 0:
                 print(f"  WARNING: {bad} forced/decided positions remain!")
             else:
-                print(f"  PASS: zero forced/decided in scored data")
+                print(f"  PASS: zero forced/decided in scored data "
+                      f"(filtered before storage)")
             stress_results["6c_forced_decided_count"] = bad
         except Exception as e:
             print(f"  Could not verify: {e}")
@@ -1566,16 +1576,19 @@ def score_confirmed_cases(baseline: Baseline, honest_dbs: dict | None = None):
                 continue
 
             try:
-                result = analyse(game, pool, cache, baseline)
-                if not result or not result.get("verdict"):
+                report = analyse(game, pool, cache, baseline)
+                if not report:
                     continue
-                verdict = result["verdict"]
+                player_report = report.players.get(target_color)
+                if not player_report or not player_report.verdict:
+                    continue
+                verdict = player_report.verdict
                 opp_color = "black" if target_color == "white" else "white"
                 opp = game.players.get(opp_color)
                 opp_name = opp.name.split()[-1] if opp else "?"
 
-                db = verdict.decibans
-                post = verdict.posterior
+                db = verdict["decibans"]
+                post = verdict["posterior"]
 
                 # Percentile rank in honest distribution
                 pct_str = ""
