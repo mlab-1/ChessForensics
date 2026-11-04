@@ -566,6 +566,207 @@ def games_to_threshold(
     return max(1, math.ceil(need / verdict.log_lr))
 
 
+# ======================================================================
+# Per-move log-LR scoring (M5)
+# ======================================================================
+
+import json as _json
+from pathlib import Path as _Path
+
+_P1_MODEL_CACHE: dict | None = None
+
+
+def _load_p1_model() -> dict:
+    """Load the per-band logistic regression for position-specific p1."""
+    global _P1_MODEL_CACHE
+    if _P1_MODEL_CACHE is not None:
+        return _P1_MODEL_CACHE
+    p = _Path(__file__).resolve().parent.parent / "cache" / "p1_logistic_model.json"
+    if p.exists():
+        _P1_MODEL_CACHE = _json.loads(p.read_text())
+    else:
+        _P1_MODEL_CACHE = {}
+    return _P1_MODEL_CACHE
+
+
+def predict_p1(move: dict, band_name: str) -> float:
+    """Position-specific probability of matching engine top-1.
+
+    Uses a per-band logistic regression fitted on the training corpus
+    (AUC ~0.75, perfectly calibrated per band).
+
+    ``move`` must contain: gap_cp, legal_moves, complexity,
+    f_spread, f_gap_small, f_only_move.
+    """
+    model = _load_p1_model()
+    bm = model.get(band_name)
+    if bm is None:
+        # Fallback: try nearest band by name, or return a safe default
+        for candidate in sorted(model.keys()):
+            bm = model[candidate]  # use any available
+        if bm is None:
+            return 0.40
+    x = np.array([
+        math.log1p(max(move.get("gap_cp") or 0, 0) / 100.0),
+        math.log(max(move.get("legal_moves") or move.get("legal", 30), 1)),
+        move.get("complexity", move.get("cx", 0.5)),
+        move.get("f_spread", move.get("spread", 0.5)),
+        move.get("f_gap_small", move.get("gap_small", 0.5)),
+        move.get("f_only_move", move.get("only_move", 0.0)),
+    ])
+    logit = bm["intercept"] + float(x @ np.array(bm["coefs"]))
+    p = 1.0 / (1.0 + math.exp(-logit))
+    return max(0.01, min(0.99, p))
+
+
+def combine_permove(
+    moves: list[dict],
+    band_name: str,
+    prior: float = DEFAULT_PRIOR,
+    signal_rows: list[EvidenceRow] | None = None,
+    extra_caveats: list[str] | None = None,
+    uncalibrated: bool = False,
+    n_mc: int = 4000,
+    baseline_n_games: int = 0,
+    seed: int = 0,
+    baseline: "Baseline | None" = None,
+) -> Verdict:
+    """Score a game using per-move log-likelihood ratios.
+
+    For each move, computes a binary log-LR using position-specific p1
+    from the fitted logistic model, then sums across moves and applies
+    the mixture over assistance rates.
+
+    When a fitted baseline with per-band permove null calibration is
+    available, the raw dB score is z-normalised against the band's
+    honest distribution and rescaled to the pooled reference.  This
+    ensures uniform FPR across rating bands.
+
+    This replaces combine() as the primary scoring function.
+    The old signal-based rows can still be passed for display purposes.
+    """
+    caveats = list(extra_caveats or [])
+
+    if not moves or len(moves) < 8:
+        caveats.append("too few scoreable moves for per-move scoring")
+        return Verdict(
+            posterior=prior, posterior_low=prior, posterior_high=prior,
+            prior=prior, log_lr=0.0, decibans=0.0, decibans_naive=0.0,
+            redundancy=0.0, rows=signal_rows or [], caveats=caveats,
+            n_signals=0, uncalibrated=uncalibrated,
+            log_lrs_by_rate=[0.0] * len(MIXTURE_RATES),
+        )
+
+    model = _load_p1_model()
+    if not model.get(band_name):
+        caveats.append(
+            f"no per-move p1 model for band {band_name}; falling back to "
+            f"flat p1=0.35"
+        )
+
+    n_rates = len(MIXTURE_RATES)
+    per_rate_ll = np.zeros(n_rates)
+
+    for m in moves:
+        t1 = m.get("matched_t1", m.get("t1", 0))
+        p1 = predict_p1(m, band_name)
+
+        for i, r in enumerate(MIXTURE_RATES):
+            if t1:
+                per_rate_ll[i] += math.log(r + (1 - r) * p1) - math.log(p1)
+            else:
+                per_rate_ll[i] += math.log(max(1 - r, 1e-10))
+
+    log_lr = float(logsumexp(per_rate_ll + MIXTURE_LOG_PRIOR))
+    db = 10.0 * log_lr / math.log(10)
+
+    # --- Per-band null calibration ---
+    # Correct the raw dB so every band's honest distribution has the same
+    # location and scale.  Without this, bands with systematically higher
+    # raw scores (e.g. 2000-2200) get inflated FPR at a global threshold.
+    _band_cal = None
+    _pooled_cal = None
+    if baseline is not None:
+        ncb = getattr(baseline, "null_calibration_by_band", None)
+        nc = getattr(baseline, "null_calibration", None)
+        if callable(ncb):
+            ncb = ncb()
+        if callable(nc):
+            nc = nc()
+        if ncb and nc:
+            _band_cal = (ncb.get(band_name) or {}).get("permove")
+            _pooled_cal = nc.get("permove")
+
+    if _band_cal and _pooled_cal and _band_cal["n"] >= 30:
+        band_bias = _band_cal["bias"]
+        band_scale = max(_band_cal["scale"], 0.1)
+        pool_bias = _pooled_cal["bias"]
+        pool_scale = max(_pooled_cal["scale"], 0.1)
+        db = (db - band_bias) / band_scale * pool_scale + pool_bias
+        log_lr = db * math.log(10) / 10.0
+        # Also calibrate per-rate LLs proportionally so multi-game
+        # aggregation benefits from the same correction.
+        raw_db_rates = 10.0 * per_rate_ll / math.log(10)
+        cal_db_rates = (raw_db_rates - band_bias) / band_scale * pool_scale + pool_bias
+        per_rate_ll = cal_db_rates * math.log(10) / 10.0
+
+    posterior = _sigmoid(_logit(prior) + log_lr)
+
+    # Sensitivity band: jitter the p1 predictions
+    if n_mc > 0:
+        rng = np.random.default_rng(seed)
+        p1_jitter = 0.05 if baseline_n_games >= 50 else 0.10
+        draws = np.empty(n_mc)
+        for d in range(n_mc):
+            ll_mc = np.zeros(n_rates)
+            for m in moves:
+                t1 = m.get("matched_t1", m.get("t1", 0))
+                p1 = predict_p1(m, band_name)
+                p1 = max(0.01, min(0.99, p1 + rng.normal(0, p1_jitter * p1)))
+                for i, r in enumerate(MIXTURE_RATES):
+                    if t1:
+                        ll_mc[i] += math.log(r + (1 - r) * p1) - math.log(p1)
+                    else:
+                        ll_mc[i] += math.log(max(1 - r, 1e-10))
+            ll_mix = float(logsumexp(ll_mc + MIXTURE_LOG_PRIOR))
+            if _band_cal and _pooled_cal and _band_cal["n"] >= 30:
+                db_mc = 10.0 * ll_mix / math.log(10)
+                db_mc = (db_mc - band_bias) / band_scale * pool_scale + pool_bias
+                ll_mix = db_mc * math.log(10) / 10.0
+            draws[d] = _sigmoid(_logit(prior) + ll_mix)
+        lo, hi = float(np.percentile(draws, 5.0)), float(np.percentile(draws, 95.0))
+    else:
+        lo, hi = posterior, posterior
+
+    if uncalibrated:
+        caveats.insert(
+            0,
+            "running on shipped default baselines, not a fitted corpus. Treat "
+            "the posterior as indicative only.",
+        )
+    if len(moves) < 25:
+        caveats.append(
+            f"only {len(moves)} scoreable decisions; single-game evidence is "
+            "intrinsically weak and the credible interval reflects that"
+        )
+
+    return Verdict(
+        posterior=posterior,
+        posterior_low=lo,
+        posterior_high=hi,
+        prior=prior,
+        log_lr=log_lr,
+        decibans=db,
+        decibans_naive=db,  # no naive/adjusted distinction for per-move
+        redundancy=0.0,
+        rows=signal_rows or [],
+        caveats=caveats,
+        n_signals=len(moves),
+        uncalibrated=uncalibrated,
+        log_lrs_by_rate=per_rate_ll.tolist(),
+    )
+
+
 def interpret(verdict: Verdict) -> str:
     """A short, deliberately unexciting verbal summary.
 

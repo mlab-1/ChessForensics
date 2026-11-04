@@ -589,14 +589,32 @@ def analyse_player(
             f"only {n} scoreable decisions in this game; single-game evidence is "
             f"intrinsically weak and the credible interval reflects that"
         )
-    verdict = score.combine(
+
+    # Build signal-based evidence rows for display (old system, still useful
+    # for explaining which aspects of play were unusual).
+    old_verdict = score.combine(
         signals,
         prior=prior,
         corpus_R=baseline.correlation,
         shrinkage=baseline.shrinkage(),
+        extra_caveats=[],
+        uncalibrated=baseline.is_default,
+        baseline_n_games=baseline.n_games,
+        n_mc=50,  # lightweight, we only need the rows
+    )
+    display_rows = old_verdict.rows
+
+    # Per-move log-LR scoring (M5) — the actual verdict.
+    move_dicts = sub.to_dict("records")
+    verdict = score.combine_permove(
+        move_dicts,
+        band_name=band_name,
+        prior=prior,
+        signal_rows=display_rows,
         extra_caveats=extra,
         uncalibrated=baseline.is_default,
         baseline_n_games=baseline.n_games,
+        baseline=baseline,
     )
     rep.verdict = verdict.to_dict()
     rep.verdict["interpretation"] = score.interpret(verdict)

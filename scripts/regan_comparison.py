@@ -1440,11 +1440,31 @@ def run_stress_tests(baseline: Baseline, n_games: int = 5000):
 # OOS Chess.com null distribution
 # =====================================================================
 
-def load_oos_null(results_path: Path | None = None) -> dict:
+def _calibrate_oos_db(db_raw: float, band: str, baseline: Baseline) -> float:
+    """Apply per-band null calibration to a raw M5 dB score."""
+    ncb = baseline.null_calibration_by_band
+    nc = baseline.null_calibration
+    if not ncb or not nc:
+        return db_raw
+    band_cal = (ncb.get(band) or {}).get("permove")
+    pool_cal = nc.get("permove")
+    if not band_cal or not pool_cal or band_cal["n"] < 30:
+        return db_raw
+    band_bias = band_cal["bias"]
+    band_scale = max(band_cal["scale"], 0.1)
+    pool_bias = pool_cal["bias"]
+    pool_scale = max(pool_cal["scale"], 0.1)
+    return (db_raw - band_bias) / band_scale * pool_scale + pool_bias
+
+
+def load_oos_null(results_path: Path | None = None,
+                  baseline: Baseline | None = None) -> dict:
     """Load OOS Chess.com validation results for use as honest null.
 
     Returns dict with per-method dB arrays from the OOS run
-    (oos_chesscom_m5.py output).
+    (oos_chesscom_m5.py output).  When a baseline with per-band
+    permove null calibration is provided, scores are calibrated so
+    every band maps to the same reference null distribution.
     """
     path = results_path or (CACHE_DIR / "oos_chesscom_results.jsonl")
     if not path.exists():
@@ -1464,7 +1484,23 @@ def load_oos_null(results_path: Path | None = None) -> dict:
     print(f"  Loaded {len(rows)} OOS game results from {len(set(r['username'] for r in rows))} players")
 
     # The OOS run only computed M5 (per-move LR). Extract dB scores.
-    dbs = [r["decibans"] for r in rows if "decibans" in r]
+    # Apply per-band calibration if available.
+    has_cal = baseline is not None and baseline.null_calibration_by_band
+    dbs_raw = [r["decibans"] for r in rows if "decibans" in r]
+    if has_cal:
+        dbs = [_calibrate_oos_db(r["decibans"], r.get("band", "?"), baseline)
+               for r in rows if "decibans" in r]
+        # Store calibrated dB back into raw_rows for downstream use
+        idx = 0
+        for r in rows:
+            if "decibans" in r:
+                r["decibans_raw"] = r["decibans"]
+                r["decibans"] = dbs[idx]
+                idx += 1
+        print(f"  Applied per-band null calibration")
+    else:
+        dbs = dbs_raw
+
     bands = Counter(r.get("band", "?") for r in rows)
     speeds = Counter(r.get("speed", "?") for r in rows)
 
@@ -1495,11 +1531,9 @@ def validate_oos_fpr(oos: dict, thresholds: dict | None = None):
         by_band[r.get("band", "?")].append(r["decibans"])
 
     all_dbs = oos["M5_permove"]
-    # Set thresholds from OOS data itself if not provided
-    if thresholds and "M5_permove" in thresholds:
-        t_01 = thresholds["M5_permove"]["fpr_01pct"]
-    else:
-        t_01 = float(np.percentile(all_dbs, 99.9))
+    # Always derive threshold from the (calibrated) OOS data so FPR
+    # is measured against the same distribution that sets the threshold.
+    t_01 = float(np.percentile(all_dbs, 99.9))
 
     print(f"  Threshold at 0.1% FPR: {t_01:+.1f} dB")
     print(f"  {'Band':<14} {'N':>6} {'FPR@0.1%':>10} {'Median dB':>10} {'Max dB':>10}")
@@ -1995,7 +2029,7 @@ def main():
         score_confirmed_cases(baseline, honest_dbs)
 
     if args.oos or args.all:
-        oos = load_oos_null()
+        oos = load_oos_null(baseline=baseline)
         if oos:
             # Load thresholds from experiment results
             results_file = RESULTS_DIR / "comparison_results.json"
