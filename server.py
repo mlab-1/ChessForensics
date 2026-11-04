@@ -637,6 +637,86 @@ def baseline() -> dict:
 
 _CASE_STUDIES = [
     {
+        "id": "ivanov",
+        "type": "flagged",
+        "title": "The Shoe Device",
+        "subtitle": "Zadar Open, Croatia 2012",
+        "narrative": (
+            "Bulgarian FM Borislav Ivanov stunned the chess world at the 2012 "
+            "Zadar Open by defeating four grandmasters while rated just 2227. "
+            "Statistical analysis by Professor Kenneth Regan found his play "
+            "matched a top engine at odds exceeding one million to one. Ivanov "
+            "was suspected of concealing an electronic device in his shoe. He "
+            "refused to submit to a body search and was expelled from the "
+            "tournament mid-event."
+        ),
+        "method": (
+            "Suspected electronic device concealed in shoe, transmitting "
+            "engine moves during play"
+        ),
+        "outcome": (
+            "Bulgarian Chess Federation lifetime ban. FIDE stripped his FM "
+            "title. Regan's statistical analysis was central to the case."
+        ),
+        "highlight_index": 0,
+        "stats": [],
+        "pgn_file": "ivanov_zadar_2012.pgn",
+    },
+    {
+        "id": "shevchenko",
+        "type": "flagged",
+        "title": "The GM Who Lost His Title",
+        "subtitle": "Spanish Team Championship, Melilla 2024",
+        "narrative": (
+            "Ukrainian-born GM Kirill Shevchenko (rated 2656) was caught "
+            "with a phone hidden in a toilet at the 2024 Spanish Team "
+            "Championship in Melilla. An arbiter discovered the device "
+            "during an inspection prompted by suspicions from opponents. "
+            "The case was notable because Shevchenko was already an "
+            "established grandmaster \u2014 demonstrating that cheating is "
+            "not limited to lower-rated players."
+        ),
+        "method": (
+            "Smartphone hidden in toilet at the playing venue, consulted "
+            "during bathroom visits"
+        ),
+        "outcome": (
+            "FIDE Ethics and Disciplinary Commission (June 2024): 3-year ban "
+            "and GM title stripped \u2014 one of the harshest sanctions in "
+            "recent FIDE history."
+        ),
+        "highlight_index": 0,
+        "stats": [],
+        "pgn_file": "shevchenko_tchESP_2024.pgn",
+    },
+    {
+        "id": "rausis",
+        "type": "flagged",
+        "title": "The Long Deception",
+        "subtitle": "Czech Extraliga 2019",
+        "narrative": (
+            "Latvian-born GM Igors Rausis had a remarkable late-career "
+            "rating surge, climbing from 2500 to 2685 in his late fifties "
+            "\u2014 an almost unheard-of trajectory. In July 2019, he was "
+            "photographed consulting a phone in a bathroom stall during a "
+            "tournament in Strasbourg. Subsequent investigation revealed "
+            "a pattern of engine-assisted play stretching back years. His "
+            "games from the 2018\u201319 Czech Extraliga show the statistical "
+            "fingerprint clearly."
+        ),
+        "method": (
+            "Phone concealed in bathroom, consulted during play over an "
+            "extended period (estimated 2014\u20132019)"
+        ),
+        "outcome": (
+            "FIDE: 6-year ban and GM title stripped. Rausis issued a public "
+            "apology and retired from competitive chess."
+        ),
+        "highlight_index": 1,
+        "stats": [],
+        "pgn_file": "rausis_extraliga_2019.pgn",
+    },
+    {
         "id": "feller",
         "type": "flagged",
         "title": "The Feller Relay Scheme",

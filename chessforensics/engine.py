@@ -440,6 +440,13 @@ class EnginePool:
                 eng.close()
             except Exception:
                 pass
+            # Force-kill the process if it's still alive after close()
+            try:
+                proc = eng.transport.process
+                if proc and proc.returncode is None:
+                    proc.kill()
+            except Exception:
+                pass
             with self._lock:
                 self._created -= 1
             return

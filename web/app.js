@@ -1059,7 +1059,7 @@ function renderCaseStudies(cases) {
   let flaggedIdx = 0;
   container.innerHTML = cases.map((c) => {
     const isClean = c.type === 'clean';
-    const label = isClean ? 'COUNTER-EXAMPLE' : `CASE 0${++flaggedIdx}`;
+    const label = isClean ? 'COUNTER-EXAMPLE' : `CASE ${String(++flaggedIdx).padStart(2,'0')}`;
     const hi = c.highlight_index || 0;
     const game = c.games[hi];
     if (!game) return '';
@@ -1078,17 +1078,6 @@ function renderCaseStudies(cases) {
     return `
       <div class="case-group${isClean ? ' case-group--clean' : ''} fade-in">
         <div class="case-card" data-case="${esc(c.id)}">
-          <div class="case-info-col">
-            <div class="case-group-header">
-              <span class="case-group-num">${label}</span>
-              <h3 class="case-group-title">${esc(c.title)}</h3>
-            </div>
-            <div class="case-group-sub">${esc(c.subtitle)}</div>
-            <p class="case-group-narrative">${esc(c.narrative)}</p>
-            <div class="case-stats">${statsHtml}</div>
-            <div class="case-detail"><strong>Method:</strong> ${esc(c.method || '')}</div>
-            <div class="case-detail"><strong>Outcome:</strong> ${esc(c.outcome || '')}</div>
-          </div>
           <div class="case-board-col">
             <div class="board-player board-player--top" id="case-player-top-${c.id}">
               <span class="board-player-name">${esc(game.black)}</span>
@@ -1107,7 +1096,17 @@ function renderCaseStudies(cases) {
             </div>
             <div class="case-ply" id="case-ply-${c.id}"></div>
             ${c.games.length > 1 ? `<select class="case-game-select" data-case="${esc(c.id)}">${opts}</select>` : ''}
-            <button class="btn-ghost case-load-btn" data-case="${c.id}" style="width:100%;justify-content:center;margin-top:6px">Load in Analyser</button>
+          </div>
+          <div class="case-info-col">
+            <div class="case-group-header">
+              <span class="case-group-num">${label}</span>
+              <h3 class="case-group-title">${esc(c.title)}</h3>
+            </div>
+            <div class="case-group-sub">${esc(c.subtitle)}</div>
+            <p class="case-group-narrative">${esc(c.narrative)}</p>
+            <div class="case-detail"><strong>Method:</strong> ${esc(c.method || '')}</div>
+            <div class="case-detail"><strong>Outcome:</strong> ${esc(c.outcome || '')}</div>
+            <button class="btn-ghost case-load-btn" data-case="${c.id}" style="width:100%;justify-content:center;margin-top:8px">Load in Analyser</button>
           </div>
         </div>
       </div>`;
@@ -1227,17 +1226,9 @@ async function loadBaseline() {
       : '<span class="badge ok">fitted</span>';
     $('#baseinfo').innerHTML = `${flag} ${esc(b.description)}`;
     if (isNum(b.default_prior)) $('#prior').value = b.default_prior;
-    // Update methodology corpus stats
-    if (b.games) {
-      const el = document.getElementById('corpus-games');
-      if (el) el.textContent = b.games >= 1e6
-        ? (b.games / 1e6).toFixed(1) + 'M' : b.games.toLocaleString();
-    }
-    if (b.positions) {
-      const el = document.getElementById('corpus-positions');
-      if (el) el.textContent = b.positions >= 1e6
-        ? (b.positions / 1e6).toFixed(1) + 'M' : b.positions.toLocaleString();
-    }
+    // Methodology corpus stats use full-corpus numbers from the paper (3.4M games,
+    // 229.6M positions, 12 bands) — the API returns the training-partition subset,
+    // so we only update bands_fitted and leave the HTML defaults for games/positions.
     if (b.bands_fitted) {
       const el = document.getElementById('corpus-bands');
       if (el) el.textContent = b.bands_fitted;
@@ -1317,7 +1308,7 @@ loadCaseStudies();
 const revealObs = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
 }, { threshold: 0.12 });
-document.querySelectorAll('.features-section h2.sec, .features-section p.secsub, .features-grid, .cases-section h2.sec, .cases-section p.secsub, .case-grid, .method-block, .landing-footer').forEach(el => {
+document.querySelectorAll('.cases-section h2.sec, .cases-section p.secsub, .case-grid, .method-block, .landing-footer').forEach(el => {
   el.classList.add('reveal');
   revealObs.observe(el);
 });

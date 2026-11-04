@@ -62,6 +62,9 @@ class MoveFeature:
     played_check: int
     best_quiet: int
     best_forcing: int
+    f_spread: float
+    f_gap_small: float
+    f_only_move: float
     phase: float
     phase_name: str  # "opening", "middlegame", "endgame"
     think_time: float | None
@@ -256,6 +259,9 @@ def build_frame(
                 played_check=int(played_ok and board.gives_check(played)),
                 best_quiet=int(feats["best_quiet"] > 0),
                 best_forcing=int(feats["best_forcing"] > 0),
+                f_spread=feats["spread"],
+                f_gap_small=feats["gap_small"],
+                f_only_move=feats["only_move"],
                 phase=feats["phase"],
                 phase_name=feats["phase_name"],
                 think_time=mv.think_time,

@@ -536,6 +536,16 @@ a:hover{text-decoration:underline}
   box-shadow:0 1px 4px rgba(0,0,0,0.25);
 }
 
+.mode-rec{
+  font-size:8px;letter-spacing:0.08em;text-transform:uppercase;
+  background:rgba(76,175,80,0.15);color:#81c784;border:1px solid rgba(76,175,80,0.25);
+  border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle;
+}
+.mode-hint{
+  font-size:11px;color:var(--fg-3);line-height:1.5;margin-top:8px;
+}
+.mode-hint strong{color:var(--fg-2)}
+
 label.fld{display:block;margin-bottom:12px}
 label.fld>span{display:block;font-size:11px;color:var(--fg-3);margin-bottom:4px;font-weight:500}
 
@@ -957,36 +967,48 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;background:var(--go
 
 /* ======================================================= CASE STUDIES */
 
-/* ---- case group header ---- */
-.case-group{margin-bottom:40px;opacity:0;transform:translateY(20px);transition:opacity 0.6s ease,transform 0.6s ease}
+/* ---- 2×3 grid layout ---- */
+.case-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+}
+@media(max-width:1200px){.case-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){.case-grid{grid-template-columns:1fr}}
+
+/* ---- case group (tile wrapper) ---- */
+.case-group{opacity:0;transform:translateY(20px);transition:opacity 0.6s ease,transform 0.6s ease}
 .case-grid.visible .case-group{opacity:1;transform:none}
-.case-grid.visible .case-group:nth-child(2){transition-delay:0.15s}
-.case-grid.visible .case-group:nth-child(3){transition-delay:0.3s}
+.case-grid.visible .case-group:nth-child(2){transition-delay:0.1s}
+.case-grid.visible .case-group:nth-child(3){transition-delay:0.2s}
+.case-grid.visible .case-group:nth-child(4){transition-delay:0.3s}
+.case-grid.visible .case-group:nth-child(5){transition-delay:0.4s}
+.case-grid.visible .case-group:nth-child(6){transition-delay:0.5s}
 .case-group-header{
-  display:flex;align-items:center;gap:14px;margin-bottom:8px;
+  display:flex;align-items:center;gap:10px;margin-bottom:6px;
 }
 .case-group-num{
-  font:700 11px var(--font-display);letter-spacing:0.12em;
+  font:700 10px var(--font-display);letter-spacing:0.12em;
   color:var(--gold);white-space:nowrap;
   background:rgba(181,136,99,0.08);border:1px solid rgba(181,136,99,0.15);
-  border-radius:8px;padding:5px 12px;
+  border-radius:8px;padding:4px 10px;
 }
 .case-group-title{
-  font:600 20px var(--font-display);color:var(--fg);margin:0;
+  font:600 15px var(--font-display);color:var(--fg);margin:0;
 }
-.case-group-sub{color:var(--fg-3);font-size:12px;margin-bottom:4px}
+.case-group-sub{color:var(--fg-3);font-size:11px;margin-bottom:4px}
 .case-group-narrative{
-  font-size:15px;color:var(--fg-2);line-height:1.7;
-  max-width:75ch;margin-bottom:20px;
+  font-size:12.5px;color:var(--fg-2);line-height:1.6;
+  margin-bottom:10px;
+  max-height:6.4em;overflow-y:auto;
 }
 
-/* ---- case card (two-column: info + board) ---- */
+/* ---- case card (stacked: board on top, info below) ---- */
 .case-card{
-  display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:start;
+  display:flex;flex-direction:column;gap:16px;
   background:var(--glass-2);backdrop-filter:blur(14px) saturate(1.1);
   border:1px solid rgba(181,136,99,0.1);border-radius:14px;
-  padding:32px;position:relative;overflow:hidden;
+  padding:16px;position:relative;overflow:hidden;
   transition:border-color 0.3s,box-shadow 0.3s;
+  height:100%;
 }
 .case-card::before{
   content:'';position:absolute;top:0;left:0;right:0;height:1px;
@@ -996,11 +1018,11 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;background:var(--go
   border-color:rgba(181,136,99,0.2);
   box-shadow:0 0 40px rgba(90,58,36,0.08),0 20px 60px rgba(0,0,0,0.25);
 }
-@media(max-width:800px){.case-card{grid-template-columns:1fr;gap:20px}}
 
+.case-info-col{display:flex;flex-direction:column;flex:1}
 .case-info-col .case-group-header{margin-bottom:4px}
-.case-info-col .case-group-sub{margin-bottom:8px}
-.case-info-col .case-group-narrative{margin-bottom:16px}
+.case-info-col .case-group-sub{margin-bottom:6px}
+.case-info-col .case-group-narrative{margin-bottom:10px}
 
 .case-board-col{display:flex;flex-direction:column;gap:6px}
 
@@ -1053,7 +1075,7 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;background:var(--go
 }
 .cs-val{font:600 16px var(--font-mono);color:var(--fg);display:block}
 .cs-label{font-size:10px;color:var(--fg-3);letter-spacing:0.05em}
-.case-detail{font-size:12px;color:var(--fg-2);margin-bottom:6px;line-height:1.6}
+.case-detail{font-size:11.5px;color:var(--fg-2);margin-bottom:4px;line-height:1.55}
 .case-detail strong{color:var(--fg)}
 
 /* ---- clean (counter-example) modifiers ---- */
@@ -1197,7 +1219,7 @@ input[type="range"]::-moz-range-thumb{width:14px;height:14px;background:var(--go
   .card{padding:18px 16px;border-radius:14px}
   .board-section{flex-direction:column;align-items:center}
   .ml-wrap{width:100%;max-width:100%}
-  .case-card{grid-template-columns:1fr;gap:16px;padding:20px}
+  .case-card{padding:16px;gap:12px}
   .grid2{grid-template-columns:1fr}
   .verdict-detail{flex-direction:column;gap:6px;align-items:center}
   .sig-bar-name{width:100px;font-size:10px}
