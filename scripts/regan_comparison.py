@@ -610,6 +610,21 @@ def method5_permove_lr(row: dict, baseline: Baseline) -> dict | None:
     log_lr = float(logsumexp(per_rate_ll + MIXTURE_LOG_PRIOR))
     db = 10.0 * log_lr / math.log(10)
 
+    # Per-band null calibration (same as score.combine_permove)
+    ncb = baseline.null_calibration_by_band
+    nc = baseline.null_calibration
+    if ncb and nc:
+        bc = (ncb.get(band_name) or {}).get("permove")
+        pc = nc.get("permove")
+        if bc and pc and bc["n"] >= 30:
+            b_bias, b_scale = bc["bias"], max(bc["scale"], 0.1)
+            p_bias, p_scale = pc["bias"], max(pc["scale"], 0.1)
+            db = (db - b_bias) / b_scale * p_scale + p_bias
+            log_lr = db * math.log(10) / 10.0
+            raw_db_rates = 10.0 * per_rate_ll / math.log(10)
+            cal_db_rates = (raw_db_rates - b_bias) / b_scale * p_scale + p_bias
+            per_rate_ll = cal_db_rates * math.log(10) / 10.0
+
     return {"z": None, "log_lr": log_lr, "db": db,
             "log_lrs_by_rate": per_rate_ll.tolist()}
 
