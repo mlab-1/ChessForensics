@@ -81,8 +81,8 @@ are selected on 28{,}670 out-of-sample Chess.com games (V1,
 thresholds, V2's false-positive rate is at or below the target at
 every level tested (e.g.\ 0.47\% at a 1\% target in the 2000--2200
 band; 95\% CI $[0.38, 0.58]\%$).
-All ten FIDE-sanctioned cheating cases tested produce positive aggregate
-evidence ($+4.7$ to $+55.6\dB$); eight exceed $+10\dB$.
+All ten federation-sanctioned cheating cases tested produce positive
+aggregate evidence ($+4.7$ to $+55.6\dB$); seven exceed $+10\dB$.
 
 A pre-registered head-to-head comparison against four baselines
 (including a Regan-style two-signal approach) on 5{,}000 held-out
@@ -860,15 +860,16 @@ celebrated games with all five scoring methods (detailed in
     (below any reasonable threshold).
 \end{itemize}
 
-\subsection{FIDE-Sanctioned Cheating Cases}
+\subsection{Sanctioned Cheating Cases}
 \label{sec:cases}
 
-I tested the system against ten cases where FIDE's Ethics and
-Disciplinary Commission (EDC) or Fair Play Commission
-(FPL)~\citep{fide2024fairplay} imposed bans for engine-assisted
-cheating.  All sanctions are part of the
-public record published by FIDE; names are reproduced here solely to
-enable verification against those records.  For each case, only games
+I tested the system against ten cases where FIDE or the relevant
+national chess federation sanctioned players for engine-assisted
+cheating.  Nine cases involve FIDE sanctions (Ethics and Disciplinary
+Commission or Fair Play Commission~\citep{fide2024fairplay}); one
+(Ivanov) was sanctioned by the Bulgarian Chess Federation.
+All sanctions are part of the public record; names are reproduced
+here solely to enable verification against those records.  For each case, only games
 from the documented cheating period were analysed.  Cases where the
 cheater lost all games, or where the sanction was for non-cooperation
 rather than proven engine use, were excluded.  PGN sources are TWIC
@@ -877,7 +878,7 @@ calibration corpus.
 
 \Cref{tab:cases} reports per-player aggregate results.  All ten cases
 produce positive cumulative evidence ($\Sigma\dB > 0$).  At stronger
-thresholds: 8/10 exceed $+10\dB$, 4/10 exceed $+20\dB$, and 3/10
+thresholds: 7/10 exceed $+10\dB$, 4/10 exceed $+20\dB$, and 3/10
 contain at least one game with posterior above 50\%.  I report
 100\% positive-evidence coverage, not 100\% detection at an
 operational threshold; the weakest cases ($+4.7$ and $+5.0\dB$)
@@ -886,10 +887,13 @@ rules.
 
 \begin{table}[t]
   \centering
-  \caption{Ten FIDE-sanctioned cheating cases.  $n$: games scored;
+  \caption{Ten sanctioned cheating cases, scored with the signal-level
+    model.  $n$: games scored;
     $n^+$: games with individually positive evidence;
     $\overline{P}$: mean per-game posterior;
-    $\Sigma\dB$: cumulative log-likelihood ratio in decibans.}
+    $\Sigma\dB$: cumulative log-likelihood ratio in decibans.
+    Per-move model (M5) scores for a subset of cases appear in
+    \Cref{tab:confirmed}.}
   \label{tab:cases}
   \smallskip
   \small
@@ -1149,7 +1153,7 @@ offset by its much stronger power on cheaters.
 \subsection{Confirmed Cases}
 \label{sec:synth-cases}
 
-I scored three FIDE-sanctioned cheaters and two clean super-GM
+I scored three sanctioned cheaters and two clean super-GM
 brilliancy games with all five methods.  \Cref{tab:confirmed}
 reports per-player aggregate dB.
 
@@ -1164,7 +1168,7 @@ reports per-player aggregate dB.
     \toprule
     Case & Games & M1 & M2 & M3 & M4 & M5 \\
     \midrule
-    \multicolumn{7}{@{}l}{\emph{FIDE-sanctioned cheaters}} \\
+    \multicolumn{7}{@{}l}{\emph{Sanctioned cheaters}} \\
     Feller (2010)    & 9 & $+60$ & $+33$ & $+11$ & $+21$ & $+21$ \\
     Rausis (2019)    & 6 & $+27$ & $+14$ & $\pm 0$ & $+16$ & $+14$ \\
     Nigalidze (2015) & 6 & $-19$ & $-46$ & $-51$ & $-6$ & $-7$ \\
@@ -1199,6 +1203,13 @@ the honest-play signal.
 \subsection{QQ Plots and Calibration}
 \label{sec:synth-qq}
 
+\Cref{fig:qq-honest} plots each method's standardised honest-game dB
+scores against standard normal quantiles.  M5's distribution tracks the
+reference line closely, with moderate right-tail inflation consistent
+with the slightly elevated p99 values in \Cref{tab:null}.  The baselines
+(M1--M3) show heavier right-tail deviation, reflecting their less
+concentrated null distributions.
+
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/qq_honest.png}
@@ -1211,6 +1222,13 @@ the honest-play signal.
 \subsection{Per-Band Calibration}
 \label{sec:synth-bandcal}
 
+\Cref{fig:band-cal} shows the bias and scale parameters of the per-band
+null calibration for t1\_match and ACPL.  Both signals exhibit systematic
+rating-dependent shifts: ACPL bias grows increasingly negative at higher
+ratings, while its scale decreases from ${\sim}1.4$ at 1000 Elo to
+${\sim}1.0$ above 2400.  Without per-band correction, these shifts would
+produce rating-dependent false-positive rates.
+
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/band_calibration.png}
@@ -1222,6 +1240,12 @@ the honest-play signal.
 
 \subsection{Posterior Distribution on Honest Games}
 \label{sec:synth-posterior}
+
+\Cref{fig:posterior-hist} shows the distribution of per-game posterior
+probabilities on 5{,}000 honest games across all five methods.  The vast
+majority of honest games receive posteriors below 2\%.  At the 50\%
+posterior threshold, the empirical false-positive rate is 0\% for all
+mixture-based methods (M4, M5).
 
 \begin{figure}[t]
   \centering
@@ -1264,7 +1288,12 @@ the signal-level model (M4), isolating the contribution of each.
 The mixture model is the essential component of M4: removing it
 collapses the honest null from $-3.3$ to $-26.8\dB$ and inverts
 detection at $r = 25\%$.  M5 achieves similar null stability ($-6\dB$
-honest median) while delivering higher per-game evidence on cheaters.
+honest median).  Note that raw per-game median dB values are not
+directly comparable across methods because their honest null locations
+differ substantially ($-6.0$ for M5 vs $-10.6$ for M1 and $-16.5$ for
+M2); the appropriate comparison is TPR at matched FPR
+(\Cref{tab:synth-single,tab:perplayer}), where M5 leads at every
+operating point.
 
 
 \subsection{Summary of Comparison}
@@ -1316,8 +1345,8 @@ Band-stratified thresholds selected on 28{,}670 out-of-sample
 Chess.com games (V1) yield held-out FPR at or below the target on
 22{,}932 independent games (V2, zero player overlap) at every level
 tested, with Clopper--Pearson 95\% CIs confirming conservatism.
-All ten FIDE-sanctioned cheating cases produce positive aggregate
-evidence (8/10 above $+10\dB$).
+All ten sanctioned cheating cases produce positive aggregate
+evidence (7/10 above $+10\dB$).
 
 \subsection{Limitations}
 
@@ -1364,14 +1393,34 @@ signal-to-noise ratio differs between a 25-move miniature and a
 70-move endgame grind.  A length-normalised effect model could improve
 calibration, particularly for short games.
 
-\paragraph{Baseline comparison.}
-\Cref{sec:synthetic} compares the per-move log-LR against four
-baselines on 5{,}000 test-split games, with thresholds
-set exclusively on honest data.  M5 outperforms all baselines at
-both single-game and per-player levels, with all paired tests
-significant at $p < 10^{-7}$.  The critical advantage is
-position-specific weighting: brilliant play in forced positions does
-not inflate the score.
+\paragraph{Synthetic cheater construction.}
+The synthetic cheaters in the baseline comparison
+(\Cref{sec:synthetic}) are generated by replacing moves with
+Stockfish's top choice at the same engine version and analysis depth
+used to compute all per-move features.  This circularity is inherent
+in the evaluation framework---all five methods rely on the same engine
+output---but M5 may benefit disproportionately because its logistic
+regression directly models the probability of matching the analysis
+engine's top choice.  The ten real cheating cases
+(\Cref{sec:cases}) provide independent validation against actual
+cheating with diverse methods and devices, but the synthetic TPR
+comparisons may overstate M5's relative advantage.  Future work should
+evaluate robustness using alternative engines (e.g.\ Leela Chess Zero)
+or analysis depths that differ from the training configuration.
+
+\paragraph{Confounded baseline comparison.}
+M5 differs from the Regan-style baselines (M1--M3) in two respects:
+the scoring mechanism (per-move log-LR vs.\ game-level z-score) and
+the match-probability estimator (per-band logistic regression vs.\ the
+multinomial choice model).  The current experiment cannot fully isolate
+which factor drives M5's advantage.  A Poisson-binomial z-score
+computed from the same logistic $p_m$ used by M5 would complete the
+ablation.  Indirect evidence that per-move scoring contributes
+independently comes from the Kasparov falsification
+(\Cref{sec:falsification}): in forced positions where
+$p_1 \approx 1$, the log-LR assigns near-zero evidence per match,
+whereas a z-score treats all matches equally regardless of position
+difficulty.
 
 \paragraph{Effect size measurement.}
 The effect sizes in \Cref{tab:effects} are measured from 11 games
@@ -1416,8 +1465,8 @@ both higher detection power and fewer false positives on brilliant play.
 
 Band-stratified thresholds selected on 28{,}670 Chess.com games (V1)
 produce held-out FPR $\le$ target on 22{,}932 independent games (V2).
-All ten FIDE-sanctioned cheating cases produce positive aggregate
-evidence ($+4.7$ to $+55.6\dB$, 8/10 exceeding $+10\dB$).  The
+All ten sanctioned cheating cases produce positive aggregate
+evidence ($+4.7$ to $+55.6\dB$, 7/10 exceeding $+10\dB$).  The
 hardest detection---Feller, a GM receiving partial SMS
 assistance---yields $+20.8\dB$ over 9 games, confirming that
 per-player aggregation is essential for partial cheating by strong
@@ -1540,9 +1589,9 @@ rating.
     OOS Chess.com (V2)  & 22{,}932 games     & held-out FPR @ 1\%  & $\le$ 0.59\% \\
     OOS titled (Lichess)& 5{,}560 games      & FP rate @ 50\%  & 0\% \\
     \midrule
-    \multicolumn{4}{@{}l}{\emph{FIDE-sanctioned cheating cases}} \\
+    \multicolumn{4}{@{}l}{\emph{Federation-sanctioned cheating cases}} \\
     Positive evidence ($\Sigma\dB > 0$) & 10 cases & coverage & 10/10 \\
-    Strong evidence ($\Sigma\dB > 10$)  & 10 cases & coverage & 8/10 \\
+    Strong evidence ($\Sigma\dB > 10$)  & 10 cases & coverage & 7/10 \\
     Feller (9 games, M5)   & per-player     & $\Sigma\dB$      & $+20.8$ \\
     Rausis (6 games, M5)   & per-player     & $\Sigma\dB$      & $+14.1$ \\
     \midrule
