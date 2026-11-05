@@ -1081,14 +1081,13 @@ def run_experiment(baseline: Baseline, n_games: int = 5000):
                 arr = np.array(method_agg_dbs[m])
                 if len(arr) == 0:
                     continue
-                # Use per-game threshold * sqrt(N) as rough aggregate threshold
-                # or just check fraction above 0 dB (evidence for cheating)
                 tpr_above_zero = float((arr > 0).mean())
                 entry[m] = {
                     "n_players": len(arr),
                     "median_db": float(np.median(arr)),
                     "mean_db": float(np.mean(arr)),
                     "tpr_above_zero": tpr_above_zero,
+                    "values": arr.tolist(),  # keep for threshold analysis
                 }
             agg_results[key] = entry
 
@@ -1158,27 +1157,54 @@ def run_experiment(baseline: Baseline, n_games: int = 5000):
 
     # Compute per-player TPR at proper null-derived thresholds
     # (the "fpr_above_zero" metric is misleading for mixture models)
-    print("\n  Per-player detection at null-derived thresholds (1% FPR):")
-    for n_per_player in [4, 9, 13]:
-        key = f"null_n{n_per_player}"
-        if key not in null_results:
-            continue
-        null_entry = null_results[key]
-        line = f"  N={n_per_player:>2}:"
-        for m in METHODS:
-            if m not in null_entry:
+    print("\n  --- Per-player TPR at null-derived thresholds ---")
+    for fpr_label, pct in [("1%", 99), ("0.1%", 99.9)]:
+        print(f"\n  Per-player FPR={fpr_label}:")
+        for n_per_player in [4, 9, 13]:
+            null_key = f"null_n{n_per_player}"
+            if null_key not in null_results:
                 continue
-            p99 = null_entry[m]["p99"]
-            if p99 is None:
+            null_entry = null_results[null_key]
+
+            # Derive per-player threshold from null for each method
+            per_player_thresholds = {}
+            for m in METHODS:
+                if m not in null_entry or "values" not in null_entry[m]:
+                    continue
+                null_arr = np.array(null_entry[m]["values"])
+                if pct == 99.9 and len(null_arr) < 1000:
+                    continue  # not enough samples for p99.9
+                per_player_thresholds[m] = float(np.percentile(null_arr, pct))
+
+            if not per_player_thresholds:
                 continue
-            # Find corresponding aggregation result at r=0.25
-            agg_key = f"r0.25_n{n_per_player}"
-            if agg_key in agg_results and m in agg_results[agg_key]:
-                # Recompute TPR at the null p99 threshold
-                # (we don't have raw values here, so report the threshold)
-                agg_med = agg_results[agg_key][m]["median_db"]
-                line += f"  {m}: thresh={p99:+.1f}, r25%med={agg_med:+.1f}"
-        print(line)
+
+            for rate in [0.10, 0.25, 0.50]:
+                agg_key = f"r{rate}_n{n_per_player}"
+                if agg_key not in agg_results:
+                    continue
+                line = f"    r={rate:.0%} N={n_per_player:>2}:"
+                for m in METHODS:
+                    if m not in per_player_thresholds:
+                        continue
+                    thresh = per_player_thresholds[m]
+                    agg_entry = agg_results[agg_key].get(m)
+                    if not agg_entry or "values" not in agg_entry:
+                        continue
+                    agg_arr = np.array(agg_entry["values"])
+                    tpr = float((agg_arr >= thresh).mean())
+                    line += f"  {m}={tpr:.0%}"
+                    # Store in results
+                    tpr_key = f"tpr_at_fpr{fpr_label}"
+                    agg_entry[tpr_key] = tpr
+                print(line)
+
+            # Print thresholds
+            line = f"    thresholds N={n_per_player:>2}:"
+            for m in METHODS:
+                if m in per_player_thresholds:
+                    line += f"  {m}={per_player_thresholds[m]:+.1f}"
+            print(line)
 
     # ---- 7. Save all results -----------------------------------------
     all_results = {
@@ -1204,6 +1230,10 @@ def run_experiment(baseline: Baseline, n_games: int = 5000):
         for m_key in save_results["null"][n_key]:
             if isinstance(save_results["null"][n_key][m_key], dict):
                 save_results["null"][n_key][m_key].pop("values", None)
+    for a_key in save_results.get("aggregation", {}):
+        for m_key in save_results["aggregation"][a_key]:
+            if isinstance(save_results["aggregation"][a_key][m_key], dict):
+                save_results["aggregation"][a_key][m_key].pop("values", None)
 
     out.write_text(json.dumps(save_results, indent=2))
     print(f"\n  Results saved to {out}")
@@ -1586,48 +1616,90 @@ def validate_oos_fpr(oos: dict, thresholds: dict | None = None):
 # Confirmed cases (pre-registration Section 3c / Step 5)
 # =====================================================================
 
-def score_confirmed_cases(baseline: Baseline, honest_dbs: dict | None = None):
-    """Score known cheating cases with all methods.
+def _analyse_game_to_frame(game, pool, cache, baseline):
+    """Analyse a game with Stockfish and return the per-move frame dicts.
 
-    Loads PGN fixtures and runs full analysis. Requires Stockfish.
-    Reports percentile rank in the honest distribution.
+    Returns list of per-color tuples: (color, band, elo, frame_dicts, opp_name)
+    where frame_dicts matches the corpus format used by score_game().
+    """
+    from chessforensics.baselines import band_for
+    from chessforensics.complexity import ComplexityWeights
+    from chessforensics.engine import analyse_game
+    from chessforensics.features import build_frame, frame_for
+
+    fens = [m.fen_before for m in game.moves]
+    ucis = [m.uci for m in game.moves]
+    ga = analyse_game(fens, ucis, pool, cache, deep_pass=False, run_l0=False)
+    weights = ComplexityWeights.from_dict(baseline.complexity_weights)
+    df = build_frame(game, ga, weights, book_plies=None)
+    if df.empty:
+        return []
+
+    results = []
+    for color in ("white", "black"):
+        sub = frame_for(df, color)
+        if len(sub) < 8:
+            continue
+        player = game.players.get(color)
+        if not player:
+            continue
+        elo = player.elo or 1500
+        band = band_for(elo)
+        opp_color = "black" if color == "white" else "white"
+        opp = game.players.get(opp_color)
+        opp_name = (opp.name or "?").split()[-1] if opp else "?"
+
+        # Convert DataFrame rows to frame dicts matching corpus format
+        frame = []
+        for _, row in sub.iterrows():
+            frame.append({
+                "t1": int(row.get("matched_t1", 0)),
+                "t2": int(row.get("matched_t2", 0)),
+                "t3": int(row.get("matched_t3", 0)),
+                "cp": round(float(row.get("delta_cp", 0) or 0), 1),
+                "cx": round(float(row.get("complexity", 0.5) or 0.5), 3),
+                "gap": round(float(row.get("gap_cp", 10) or 10), 1),
+                "legal": int(row.get("legal_moves", 30) or 30),
+                "spread": float(row.get("f_spread", 0.5) or 0.5),
+                "gap_small": float(row.get("f_gap_small", 0.5) or 0.5),
+                "only_move": float(row.get("f_only_move", 0) or 0),
+            })
+        results.append((color, band, elo, frame, opp_name, player.name))
+    return results
+
+
+def score_confirmed_cases(baseline: Baseline, honest_dbs: dict | None = None):
+    """Score known cheating cases with ALL 5 methods.
+
+    Loads PGN fixtures, runs Stockfish analysis, builds per-move frames,
+    and scores with all comparison methods. Reports per-game AND per-player
+    aggregate dB for each method.
     """
     print("\n" + "=" * 70)
     print("CONFIRMED CASES (Pre-Registration Step 5)")
     print("=" * 70)
 
     tests_dir = ROOT / "tests"
-    cases = []
-
-    # Feller (2010 Olympiad)
-    feller_pgn = tests_dir / "feller_olympiad_2010.pgn"
-    if feller_pgn.exists():
-        cases.append(("Feller (2010 Olympiad)", feller_pgn, "Feller"))
-    else:
-        print(f"  Feller PGN not found: {feller_pgn}")
-
-    # Nigalidze (2015 Dubai)
-    nigalidze_pgn = tests_dir / "nigalidze_dubai_2015.pgn"
-    if nigalidze_pgn.exists():
-        cases.append(("Nigalidze (2015 Dubai)", nigalidze_pgn, "Nigalidze"))
-    else:
-        print(f"  Nigalidze PGN not found: {nigalidze_pgn}")
-
-    # Rausis (2019 Extraliga)
-    rausis_pgn = tests_dir / "rausis_extraliga_2019.pgn"
-    if rausis_pgn.exists():
-        cases.append(("Rausis (2019 Extraliga)", rausis_pgn, "Rausis"))
-    else:
-        print(f"  Rausis PGN not found: {rausis_pgn}")
-
+    cases = [
+        ("Feller (2010 Olympiad)", tests_dir / "feller_olympiad_2010.pgn", "Feller"),
+        ("Nigalidze (2015 Dubai)", tests_dir / "nigalidze_dubai_2015.pgn", "Nigalidze"),
+        ("Rausis (2019 Extraliga)", tests_dir / "rausis_extraliga_2019.pgn", "Rausis"),
+    ]
+    cases = [(n, p, t) for n, p, t in cases if p.exists()]
     if not cases:
         print("  No confirmed case PGNs available")
         return
 
-    # These require Stockfish — import analysis machinery
+    # Clean GM falsification cases
+    clean_cases = [
+        ("Kasparov (1999 Wijk)", tests_dir / "kasparov_topalov_1999.pgn", "Kasparov"),
+        ("Fischer (1972 WCh)", tests_dir / "fischer_spassky_1972.pgn", "Fischer"),
+    ]
+    clean_cases = [(n, p, t) for n, p, t in clean_cases if p.exists()]
+
     try:
-        from chessforensics.analyse import analyse
         from chessforensics.engine import AnalysisCache, EnginePool
+        from chessforensics.ingest import games_from_pgn_file
     except ImportError as e:
         print(f"  Cannot import analysis machinery: {e}")
         return
@@ -1635,52 +1707,139 @@ def score_confirmed_cases(baseline: Baseline, honest_dbs: dict | None = None):
     cache = AnalysisCache()
     pool = EnginePool(size=2)
 
+    all_case_results = {}
+
+    # --- Confirmed cheaters ---
     for case_name, pgn_path, target_name in cases:
         print(f"\n  {case_name}:")
         try:
-            from chessforensics.ingest import games_from_pgn_file
             games = games_from_pgn_file(pgn_path)
         except Exception as e:
             print(f"    Failed to load: {e}")
             continue
 
+        # Collect per-game scores for all methods
+        per_game_dbs = {m: [] for m in METHODS}
+        per_game_lrs = []  # for M5 mixture aggregate
+        n_scored = 0
+
         for game in games:
-            # Find target player's color
-            target_color = None
-            for color in ("white", "black"):
-                p = game.players.get(color)
-                if p and target_name in (p.name or ""):
-                    target_color = color
-                    break
-            if not target_color:
+            try:
+                sides = _analyse_game_to_frame(game, pool, cache, baseline)
+            except Exception as e:
+                print(f"    Analysis error: {e}")
                 continue
 
+            for color, band, elo, frame, opp_name, player_name in sides:
+                if target_name not in (player_name or ""):
+                    continue
+
+                row = make_honest_summary(frame)
+                row["band"] = band
+                row["elo"] = elo
+                results = score_game(row, baseline)
+
+                line = f"    vs {opp_name:<15}"
+                for m in METHODS:
+                    r = results.get(m)
+                    if r:
+                        per_game_dbs[m].append(r["db"])
+                        line += f"  {m[:2]}={r['db']:+.1f}"
+                        if m == "M5_permove" and r.get("log_lrs_by_rate"):
+                            per_game_lrs.append(r["log_lrs_by_rate"])
+                n_scored += 1
+                print(line)
+
+        if n_scored == 0:
+            print("    No games scored")
+            continue
+
+        # Per-player aggregate
+        print(f"\n    AGGREGATE ({n_scored} games):")
+        case_entry = {"type": "cheater", "n_games": n_scored, "per_game": {}, "aggregate": {}}
+        for m in METHODS:
+            if not per_game_dbs[m]:
+                continue
+            case_entry["per_game"][m] = per_game_dbs[m]
+            if m == "M5_permove" and per_game_lrs:
+                agg = mixture_aggregate(per_game_lrs)
+            else:
+                agg = db_aggregate(per_game_dbs[m])
+            case_entry["aggregate"][m] = agg
+        line = "    "
+        for m in METHODS:
+            if m in case_entry["aggregate"]:
+                line += f"  {m}={case_entry['aggregate'][m]:+.1f}dB"
+        print(line)
+        all_case_results[case_name] = case_entry
+
+    # --- Clean GM falsification (criterion 3) ---
+    if clean_cases:
+        print(f"\n  {'='*60}")
+        print(f"  FALSIFICATION: Clean top GMs (should NOT be flagged)")
+        print(f"  {'='*60}")
+
+    for case_name, pgn_path, target_name in clean_cases:
+        print(f"\n  {case_name}:")
+        try:
+            games = games_from_pgn_file(pgn_path)
+        except Exception as e:
+            print(f"    Failed to load: {e}")
+            continue
+
+        per_game_dbs = {m: [] for m in METHODS}
+        per_game_lrs = []
+        n_scored = 0
+
+        for game in games:
             try:
-                report = analyse(game, pool, cache, baseline)
-                if not report:
-                    continue
-                player_report = report.players.get(target_color)
-                if not player_report or not player_report.verdict:
-                    continue
-                verdict = player_report.verdict
-                opp_color = "black" if target_color == "white" else "white"
-                opp = game.players.get(opp_color)
-                opp_name = opp.name.split()[-1] if opp else "?"
-
-                db = verdict["decibans"]
-                post = verdict["posterior"]
-
-                # Percentile rank in honest distribution
-                pct_str = ""
-                if honest_dbs and "M5_permove" in honest_dbs:
-                    h = np.array(honest_dbs["M5_permove"])
-                    pct = float((h < db).mean()) * 100
-                    pct_str = f" (p{pct:.1f} of honest)"
-
-                print(f"    vs {opp_name:<15} dB={db:+6.1f}  "
-                      f"post={post:.2%}{pct_str}")
+                sides = _analyse_game_to_frame(game, pool, cache, baseline)
             except Exception as e:
-                print(f"    Analysis failed: {e}")
+                continue
+
+            for color, band, elo, frame, opp_name, player_name in sides:
+                if target_name not in (player_name or ""):
+                    continue
+
+                row = make_honest_summary(frame)
+                row["band"] = band
+                row["elo"] = elo
+                results = score_game(row, baseline)
+
+                line = f"    vs {opp_name:<15}"
+                for m in METHODS:
+                    r = results.get(m)
+                    if r:
+                        per_game_dbs[m].append(r["db"])
+                        line += f"  {m[:2]}={r['db']:+.1f}"
+                        if m == "M5_permove" and r.get("log_lrs_by_rate"):
+                            per_game_lrs.append(r["log_lrs_by_rate"])
+                n_scored += 1
+                print(line)
+
+        if n_scored > 0:
+            print(f"\n    AGGREGATE ({n_scored} games):")
+            case_entry = {"type": "clean_gm", "n_games": n_scored, "per_game": {}, "aggregate": {}}
+            for m in METHODS:
+                if not per_game_dbs[m]:
+                    continue
+                case_entry["per_game"][m] = per_game_dbs[m]
+                if m == "M5_permove" and per_game_lrs:
+                    agg = mixture_aggregate(per_game_lrs)
+                else:
+                    agg = db_aggregate(per_game_dbs[m])
+                case_entry["aggregate"][m] = agg
+            line = "    "
+            for m in METHODS:
+                if m in case_entry["aggregate"]:
+                    line += f"  {m}={case_entry['aggregate'][m]:+.1f}dB"
+            print(line)
+            all_case_results[case_name] = case_entry
+
+    # Save to JSON
+    out = RESULTS_DIR / "confirmed_cases.json"
+    out.write_text(json.dumps(all_case_results, indent=2))
+    print(f"\n  Results saved to {out}")
 
     try:
         pool.close()
