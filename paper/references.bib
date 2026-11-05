@@ -1,11 +1,11 @@
+% === Core chess cheating detection ===
+
 @inproceedings{regan2011understanding,
   author    = {Regan, Kenneth W. and Haworth, Guy McC.},
   title     = {Intrinsic Chess Ratings},
   booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
   year      = {2011},
   pages     = {834--839},
-  note      = {Introduces the multinomial choice model and intrinsic
-               performance rating (IPR) for chess},
 }
 
 @article{regan2014cheating,
@@ -16,8 +16,6 @@
   number  = {4},
   pages   = {215--227},
   year    = {2014},
-  note    = {Hypothesis-testing framework for detecting engine assistance
-             using Poisson-binomial match-rate tests},
 }
 
 @article{guid2006computer,
@@ -28,7 +26,6 @@
   number  = {2},
   pages   = {65--73},
   year    = {2006},
-  note    = {Early work on centipawn-loss analysis of historical games},
 }
 
 @article{regan2015intrinsic,
@@ -39,21 +36,16 @@
   pages   = {230--243},
   year    = {2015},
   publisher = {Springer},
-  note    = {Statistical distributions of chess performances and
-             rating estimation from game data},
 }
 
-@inproceedings{ferreira2013using,
-  author    = {Ferreira, Diogo R.},
-  title     = {Determining the Strength of Chess Players Based on
-               Actual Play},
-  booktitle = {ICGA Journal},
-  volume    = {36},
-  number    = {1},
-  pages     = {3--21},
-  year      = {2013},
-  note      = {Alternative approach to intrinsic rating estimation
-               from engine analysis},
+@article{ferreira2013using,
+  author  = {Ferreira, Diogo R.},
+  title   = {Determining the Strength of Chess Players Based on Actual Play},
+  journal = {ICGA Journal},
+  volume  = {36},
+  number  = {1},
+  pages   = {3--21},
+  year    = {2013},
 }
 
 @article{alliot2017who,
@@ -64,16 +56,96 @@
   number  = {1},
   pages   = {3--43},
   year    = {2017},
-  note    = {Large-scale historical chess analysis using engine
-             evaluations and statistical methods},
 }
+
+% === Statistical methods ===
+
+@article{mcnemar1947note,
+  author  = {McNemar, Quinn},
+  title   = {Note on the Sampling Error of the Difference Between Correlated
+             Proportions or Percentages},
+  journal = {Psychometrika},
+  volume  = {12},
+  number  = {2},
+  pages   = {153--157},
+  year    = {1947},
+}
+
+@article{clopper1934use,
+  author  = {Clopper, C. J. and Pearson, E. S.},
+  title   = {The Use of Confidence or Fiducial Limits Illustrated in the
+             Case of the Binomial},
+  journal = {Biometrika},
+  volume  = {26},
+  number  = {4},
+  pages   = {404--413},
+  year    = {1934},
+}
+
+@article{kass1995bayes,
+  author  = {Kass, Robert E. and Raftery, Adrian E.},
+  title   = {Bayes Factors},
+  journal = {Journal of the American Statistical Association},
+  volume  = {90},
+  number  = {430},
+  pages   = {773--795},
+  year    = {1995},
+}
+
+@article{good1979studies,
+  author  = {Good, I. J.},
+  title   = {Studies in the History of Probability and Statistics.
+             {XXXVII}. {A.~M.~Turing's} Statistical Work in {World War II}},
+  journal = {Biometrika},
+  volume  = {66},
+  number  = {2},
+  pages   = {393--396},
+  year    = {1979},
+  note    = {Origin of the deciban as a unit of evidence},
+}
+
+@book{hosmer2013applied,
+  author    = {Hosmer, David W. and Lemeshow, Stanley and Sturdivant, Rodney X.},
+  title     = {Applied Logistic Regression},
+  edition   = {3rd},
+  publisher = {Wiley},
+  year      = {2013},
+}
+
+@article{hong2013computing,
+  author  = {Hong, Yili},
+  title   = {On Computing the Distribution Function for the {Poisson}
+             Binomial Distribution},
+  journal = {Computational Statistics \& Data Analysis},
+  volume  = {59},
+  pages   = {41--51},
+  year    = {2013},
+}
+
+@book{mclachlan2000finite,
+  author    = {McLachlan, Geoffrey J. and Peel, David},
+  title     = {Finite Mixture Models},
+  publisher = {Wiley},
+  year      = {2000},
+}
+
+@article{byrd1995limited,
+  author  = {Byrd, Richard H. and Lu, Peihuang and Nocedal, Jorge and Zhu, Ciyou},
+  title   = {A Limited Memory Algorithm for Bound Constrained Optimization},
+  journal = {SIAM Journal on Scientific Computing},
+  volume  = {16},
+  number  = {5},
+  pages   = {1190--1208},
+  year    = {1995},
+}
+
+% === Chess data sources ===
 
 @misc{lichess2024database,
   author = {{Lichess.org}},
   title  = {Lichess Open Database},
   year   = {2024},
   url    = {https://database.lichess.org/},
-  note   = {Open database of rated chess games with evaluations},
 }
 
 @misc{stockfish2024,
@@ -81,5 +153,27 @@
   title  = {Stockfish: Open Source Chess Engine},
   year   = {2024},
   url    = {https://stockfishchess.org/},
-  note   = {Version 17/18 used for position evaluation},
+}
+
+@misc{twic2024,
+  author = {Crowther, Mark},
+  title  = {The Week in Chess ({TWIC})},
+  year   = {2024},
+  url    = {https://theweekinchess.com/},
+}
+
+@misc{chesscom2024,
+  author = {{Chess.com}},
+  title  = {Chess.com Public {API}},
+  year   = {2024},
+  url    = {https://www.chess.com/news/view/published-data-api},
+}
+
+% === FIDE fair play ===
+
+@misc{fide2024fairplay,
+  author = {{FIDE}},
+  title  = {Fair Play Commission: Anti-Cheating Guidelines},
+  year   = {2024},
+  url    = {https://handbook.fide.com/chapter/AntiCheatingGuidelines},
 }
