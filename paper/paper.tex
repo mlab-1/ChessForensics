@@ -78,19 +78,23 @@ Training and evaluation data are strictly separated.  Thresholds
 are selected on 28{,}670 out-of-sample Chess.com games (V1,
 15{,}586 players) and tested on a held-out set of 22{,}932 games
 (V2, 7{,}505 players, zero overlap).  Using band-stratified
-thresholds, V2's false-positive rate is at or below the target at
-every level tested (e.g.\ 0.47\% at a 1\% target in the 2000--2200
-band; 95\% CI $[0.38, 0.58]\%$).
+thresholds, V2's per-game false-positive rate point estimates are
+at or below the target in every band tested (e.g.\ 0.47\% at a 1\%
+target in the 2000--2200 band; 95\% CI $[0.38, 0.58]\%$).
 All ten federation-sanctioned cheating cases tested produce positive
 aggregate evidence ($+4.7$ to $+55.6\dB$); seven exceed $+10\dB$.
 
-A pre-registered head-to-head comparison against four baselines
-(including a Regan-style two-signal approach) on 5{,}000 held-out
-games with paired McNemar tests shows the per-move model achieves
-87\% per-player detection at 1\% FPR for 25\%-rate assistance (vs
-64\% for the Regan-style baseline, $p < 10^{-42}$), while correctly
-clearing Kasparov's ``immortal game'' ($-4.9\dB$) that the
-Regan-style baseline would flag ($+8.4\dB$).
+A pre-specified head-to-head comparison against four baselines
+(including a two-signal approach inspired by Regan's framework)
+on 5{,}000 held-out games with paired McNemar tests shows the
+per-move model achieves 87\% per-player detection at 1\% FPR for
+25\%-rate assistance (vs 64\% for the two-signal baseline), while
+correctly clearing Kasparov's ``immortal game'' ($-4.9\dB$) that
+the two-signal baseline would flag ($+8.4\dB$).  An ablation
+replacing the per-move log-LR with a Poisson-binomial z-score on
+the same position-specific probabilities confirms that both the
+improved probability estimates and the log-LR scoring mechanism
+contribute to the advantage ($p < 10^{-16}$, McNemar).
 \end{abstract}
 
 \medskip
@@ -150,7 +154,7 @@ The remainder of this paper is organised as follows.
 \Cref{sec:evidence} details the Bayesian evidence framework.
 \Cref{sec:data} describes corpus construction and train/test separation.
 \Cref{sec:validation} reports validation results.
-\Cref{sec:synthetic} presents a pre-registered head-to-head comparison
+\Cref{sec:synthetic} presents a pre-specified head-to-head comparison
 against four baselines.
 \Cref{sec:discussion} discusses limitations, and
 \Cref{sec:conclusion} concludes.
@@ -186,8 +190,9 @@ integrated over a four-rate mixture model for partial assistance, with
 per-band null calibration from a 3.4-million-game corpus under strict
 train/test separation.  I validate against ten FIDE-sanctioned cheating
 cases with known ground truth, 28{,}670 out-of-sample Chess.com games,
-and a pre-registered head-to-head comparison against Regan-style
-baselines with paired statistical tests.
+and a pre-specified head-to-head comparison against simpler baselines
+(including a two-signal approach inspired by Regan's framework) with
+paired statistical tests.
 
 
 % ══════════════════════════════════════════════════════════════════════════════
@@ -261,6 +266,7 @@ heterogeneous success probabilities, for which exact computation is
 available via $O(n^2)$ dynamic programming.
 
 \begin{definition}[Match-rate z-score]
+\label{def:zscore}
 \begin{equation}
   \label{eq:matchz}
   z_{\mathrm{t}k} = \frac{X_k - \sum_m p_m^{(k)}}
@@ -784,9 +790,10 @@ not currently exist for chess.
 
 To validate on data entirely independent of the training corpus, I
 collected two non-overlapping sets of rapid games from
-Chess.com~\citep{chesscom2024} via the public API, both rated $\ge 2100$ (titled and strong untitled
-players).  Neither set shares any players, games, or platform with the
-calibration data.
+Chess.com~\citep{chesscom2024} via the public API, filtering for
+players rated $\ge 2100$ (titled and strong untitled players; note
+that players rated 2100--2199 fall in the 2000--2200 band).  Neither
+set shares any players, games, or platform with the calibration data.
 
 \begin{itemize}[nosep]
   \item \textbf{V1} (threshold selection): 28{,}670 games from
@@ -829,13 +836,14 @@ Band & Target & V1 thr.\ (dB) & V2 FPR & 95\% CI & \\
 \end{tabular}
 \end{table}
 
-\noindent At every target level and in every band, V2's held-out FPR
-is at or below the target---the model is conservative on fully unseen
-data from a different platform.  Per-player aggregation (summing dB
-across games) yields 1.06\% in band 2000--2200 and 1.14\% in
-2200--2400 at a 1\% target, with confidence intervals that include
-1\%, confirming that multi-game evidence accumulation does not inflate
-false positives.
+\noindent Per-game point estimates are at or below the target in every
+band.  At the tightest operating point (0.1\% target, 2200--2400), the
+point estimate equals the target and the upper CI bound reaches 0.29\%,
+so exact conservatism cannot be claimed there.  Per-player aggregation
+(summing dB across games) yields 1.06\% in band 2000--2200 and 1.14\%
+in 2200--2400 at a 1\% target, with confidence intervals that include
+1\%, confirming that multi-game evidence accumulation does not
+substantially inflate false positives.
 
 \subsection{Titled-Player Games (Lichess)}
 \label{sec:titled}
@@ -854,7 +862,7 @@ celebrated games with all five scoring methods (detailed in
 
 \begin{itemize}[nosep]
   \item \textbf{Kasparov--Topalov}, Wijk aan Zee 1999: the per-move
-    model scores $-4.9\dB$ (correctly clears).  A Regan-style baseline
+    model scores $-4.9\dB$ (correctly clears).  The two-signal baseline (M2)
     would score $+8.4\dB$ (false positive).
   \item \textbf{Fischer--Spassky}, 1972 WCC Game 6: $+3.5\dB$
     (below any reasonable threshold).
@@ -863,21 +871,24 @@ celebrated games with all five scoring methods (detailed in
 \subsection{Sanctioned Cheating Cases}
 \label{sec:cases}
 
-I tested the system against ten cases where FIDE or the relevant
-national chess federation sanctioned players for engine-assisted
-cheating.  Nine cases involve FIDE sanctions (Ethics and Disciplinary
-Commission or Fair Play Commission~\citep{fide2024fairplay}); one
-(Ivanov) was sanctioned by the Bulgarian Chess Federation.
-All sanctions are part of the public record; names are reproduced
-here solely to enable verification against those records.  For each case, only games
-from the documented cheating period were analysed.  Cases where the
-cheater lost all games, or where the sanction was for non-cooperation
-rather than proven engine use, were excluded.  PGN sources are TWIC
-archives and tournament bulletins; none overlap with the
-calibration corpus.
+I tested the system against eleven sanctioned cheating cases.
+Ten involve sanctions by FIDE (Ethics and Disciplinary Commission or
+Fair Play Commission~\citep{fide2024fairplay}); one (Ivanov) was
+sanctioned by the Bulgarian Chess Federation.  An eleventh case
+(Nigalidze, sanctioned for device possession) is scored and discussed
+separately in \Cref{sec:synth-cases}; his games produce negative
+evidence across all methods (M5: $-7\dB$), consistent with reports of
+intermittent device use.  All sanctions are part of the public record;
+names are reproduced here solely to enable verification.  For each
+case, only games from the documented cheating period were analysed.
+Cases where the cheater lost all games, or where the sanction was for
+non-cooperation rather than proven engine use, were excluded.  PGN
+sources are TWIC archives and tournament bulletins; none overlap with
+the calibration corpus.
 
-\Cref{tab:cases} reports per-player aggregate results.  All ten cases
-produce positive cumulative evidence ($\Sigma\dB > 0$).  At stronger
+\Cref{tab:cases} reports per-player aggregate results for the ten
+cases with sufficient cheating signal.  All ten produce positive
+cumulative evidence ($\Sigma\dB > 0$).  At stronger
 thresholds: 7/10 exceed $+10\dB$, 4/10 exceed $+20\dB$, and 3/10
 contain at least one game with posterior above 50\%.  I report
 100\% positive-evidence coverage, not 100\% detection at an
@@ -939,11 +950,14 @@ multi-game aggregation.
 \label{sec:synthetic}
 
 To rigorously evaluate the per-move log-LR approach, I compare it
-against four progressively simpler baselines in a pre-registered
+against four progressively simpler baselines in a pre-specified
 experiment on the \emph{same positions, same engine output, and same
 calibration data}.  Since Regan's actual software is not public, the
-baselines implement a ``Regan-style'' approach using the choice
-model from \Cref{sec:choice}.
+baselines implement an approach \emph{inspired by} Regan's
+framework---using the choice model from \Cref{sec:choice}---but are
+not intended as a faithful reproduction of his full methodology,
+which scores the complete multinomial move distribution rather than
+top-1 match rates alone.
 
 \subsection{Experimental Design}
 \label{sec:synth-design}
@@ -956,10 +970,10 @@ All methods operate on identical per-move Stockfish analysis
   \item \textbf{M1: Top-1 z only.} A single Poisson-binomial
     t1\_match z-score, converted to a log-LR with a fixed effect
     size.  No calibration.
-  \item \textbf{M2: Regan-style.} t1\_match~z plus ACPL~z,
+  \item \textbf{M2: Two-signal (Regan-inspired).} t1\_match~z plus ACPL~z,
     combined with independence assumption (no correlation
     adjustment, no mixture model, no per-band calibration).
-  \item \textbf{M3: Regan + calibration.} Same as M2 but with
+  \item \textbf{M3: M2 + calibration.} Same as M2 but with
     per-band null calibration applied, isolating the contribution
     of calibration.
   \item \textbf{M4: Signal-level model.} All available game-level
@@ -1019,7 +1033,7 @@ versa), with Bonferroni correction for 6 comparisons
 
 The per-move model (M5) outperforms all baselines at every partial
 assistance rate, including M1 (top-1 z only).  At $r = 50\%$ and
-0.1\% FPR, M5 achieves 57.5\% TPR vs 41.0\% for the Regan-style M2
+0.1\% FPR, M5 achieves 57.5\% TPR vs 41.0\% for M2
 (McNemar odds ratio = 5.47, $p < 10^{-137}$).  At $r = 25\%$, M5
 achieves 7.5\% vs M2's 4.6\% (OR = 2.76, $p < 10^{-16}$).
 
@@ -1042,13 +1056,17 @@ achieves 7.5\% vs M2's 4.6\% (OR = 2.76, $p < 10^{-16}$).
 \end{figure}
 
 \paragraph{Why M5 outperforms game-level methods.}
-Game-level z-scores (M1--M4) reduce per-move information to a single
-sufficient statistic under the assumption that all positions are equally
-informative.  The per-move log-LR preserves position-specific information:
-a top-1 match in a position with $p_1 = 0.08$ (many reasonable alternatives,
-small gap) contributes far more evidence than a match with $p_1 = 0.90$
-(forced move).  This ``information-weighted'' scoring is the fundamental
-source of M5's advantage.
+The Poisson-binomial z-score (M1--M3) is position-aware in expectation:
+each match contributes $(1 - p_m)$ to the numerator, so matches in
+low-$p$ positions receive higher weight than those in forced positions.
+However, the log-LR provides \emph{sharper} position-specific weighting:
+at $r = 0.25$, a match at $p_1 = 0.08$ contributes ${\sim}48\times$
+the evidence of a match at $p_1 = 0.90$, compared to ${\sim}9\times$
+for the z-score's linear $(1-p)$ weighting.  This near-optimal
+Neyman--Pearson weighting is one source of M5's advantage.  An ablation
+(\Cref{sec:ablation-pb}) confirms that both the improved logistic
+probability estimates and the log-LR scoring mechanism contribute
+independently.
 
 
 \subsection{Per-Player Aggregation}
@@ -1089,7 +1107,7 @@ distribution (not the arbitrary ``$\dB > 0$'' threshold).
 
 At the operationally critical regime ($r = 25\%$, $N = 4$ games,
 FPR = 1\%), M5 detects 87\% of cheaters vs 64\% for M2
-(Regan-style).  At 0.1\% FPR the gap widens: 83\% vs 58\%.
+(two-signal baseline).  At 0.1\% FPR the gap widens: 83\% vs 58\%.
 At $r = 10\%$ with 13 games, M5 achieves 67\% TPR---nearly double
 M2's 34\%.
 
@@ -1184,7 +1202,7 @@ reports per-player aggregate dB.
 \paragraph{Falsification test.}
 Kasparov's ``immortal game'' (Wijk aan Zee 1999) is a critical
 falsification case: brilliant attacking play that looks engine-like.
-M1 and M2 (Regan-style) would \emph{falsely flag} Kasparov at
+M1 and M2 (two-signal) would \emph{falsely flag} Kasparov at
 $+10.4$ and $+8.4\dB$ respectively---both exceed typical per-game
 thresholds.  The per-move model (M5) correctly scores $-4.9\dB$
 because its position-specific $p_1$ recognises that in sharp tactical
@@ -1280,7 +1298,7 @@ the signal-level model (M4), isolating the contribution of each.
     \midrule
     M5 (per-move LR)         & $+4.0$ & $+16.0$ & $+44.0$ & $-6.0$ \\
     M1 (t1 z only)           & $+5.9$ & $+22.1$ & $+52.5$ & $-10.6$ \\
-    M2 (Regan-style)         & $+1.2$ & $+18.8$ & $+51.3$ & $-16.5$ \\
+    M2 (two-signal)          & $+1.2$ & $+18.8$ & $+51.3$ & $-16.5$ \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1294,6 +1312,50 @@ differ substantially ($-6.0$ for M5 vs $-10.6$ for M1 and $-16.5$ for
 M2); the appropriate comparison is TPR at matched FPR
 (\Cref{tab:synth-single,tab:perplayer}), where M5 leads at every
 operating point.
+
+
+\subsection{Probability Estimation vs Scoring Mechanism}
+\label{sec:ablation-pb}
+
+M5 differs from M1--M3 in both the match-probability estimator
+(per-band logistic regression vs.\ the choice model's band-average
+rate) and the scoring mechanism (per-move log-LR vs.\ game-level
+z-score).  To isolate these contributions, I introduce an ablation
+baseline M6: a Poisson-binomial z-score (\Cref{def:zscore}) computed
+from the same logistic $p_m$ used by M5, converted to a log-LR with
+the same fixed effect size as M1.
+
+\begin{table}[t]
+  \centering
+  \caption{Ablation isolating probability estimation from scoring
+    mechanism.  TPR at 0.1\% FPR (thresholds set on 5{,}000 honest
+    games).}
+  \label{tab:ablation-pb}
+  \smallskip
+  \small
+  \begin{tabular}{@{}llrrr@{}}
+    \toprule
+    & & \multicolumn{3}{c}{TPR at 0.1\% FPR} \\
+    \cmidrule(lr){3-5}
+    Method & $p_m$ source & $r{=}25\%$ & $r{=}50\%$ & $r{=}100\%$ \\
+    \midrule
+    M1 (PB z-score)   & band average & 3.4\% & 40.9\% & 100\% \\
+    M6 (PB z-score)   & logistic     & 7.8\% & 57.2\% & 99.9\% \\
+    M5 (per-move LR)  & logistic     & 10.0\% & 63.8\% & 100\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\Cref{tab:ablation-pb} shows that both factors contribute.  Replacing
+band-average probabilities with logistic $p_m$ (M1 $\to$ M6) raises
+TPR from 3.4\% to 7.8\% at $r = 25\%$---roughly 60\% of the total
+M1-to-M5 gain.  Replacing the z-score with the per-move log-LR
+(M6 $\to$ M5) adds a further gain to 10.0\%
+(McNemar $p < 10^{-16}$).  At $r = 50\%$, the pattern is similar:
+M6 achieves 57.2\% vs M5's 63.8\%.  The per-move log-LR's sharper
+position weighting (\Cref{sec:synth-single}) provides a statistically
+significant advantage beyond what better probability estimates alone
+deliver.
 
 
 \subsection{Summary of Comparison}
@@ -1314,8 +1376,9 @@ conditions:
   \item \textbf{Confirmed cheaters}: M5 detects Feller ($+21\dB$)
     and Rausis ($+14\dB$) comparably to M2.
   \item \textbf{OOS validation}: Thresholds set on V1 (28{,}670
-    Chess.com games) yield held-out V2 FPR $\le$ target in every
-    band (e.g.\ 0.47\% at 1\% target, 2000--2200).
+    Chess.com games) yield held-out V2 per-game FPR point estimates
+    at or below target in every band (e.g.\ 0.47\% at 1\% target,
+    2000--2200).
 \end{itemize}
 
 \noindent
@@ -1342,9 +1405,10 @@ Per-player mixture aggregation detects partial assistance that per-game
 analysis misses.
 
 Band-stratified thresholds selected on 28{,}670 out-of-sample
-Chess.com games (V1) yield held-out FPR at or below the target on
-22{,}932 independent games (V2, zero player overlap) at every level
-tested, with Clopper--Pearson 95\% CIs confirming conservatism.
+Chess.com games (V1) yield held-out per-game FPR point estimates at
+or below the target on 22{,}932 independent games (V2, zero player
+overlap) in every band tested, with Clopper--Pearson 95\% CIs
+consistent with the target.
 All ten sanctioned cheating cases produce positive aggregate
 evidence (7/10 above $+10\dB$).
 
@@ -1409,7 +1473,7 @@ evaluate robustness using alternative engines (e.g.\ Leela Chess Zero)
 or analysis depths that differ from the training configuration.
 
 \paragraph{Confounded baseline comparison.}
-M5 differs from the Regan-style baselines (M1--M3) in two respects:
+M5 differs from the simpler baselines (M1--M3) in two respects:
 the scoring mechanism (per-move log-LR vs.\ game-level z-score) and
 the match-probability estimator (per-band logistic regression vs.\ the
 multinomial choice model).  The current experiment cannot fully isolate
@@ -1464,7 +1528,8 @@ position-level information that game-level z-scores discard, yielding
 both higher detection power and fewer false positives on brilliant play.
 
 Band-stratified thresholds selected on 28{,}670 Chess.com games (V1)
-produce held-out FPR $\le$ target on 22{,}932 independent games (V2).
+produce held-out per-game FPR point estimates at or below the target
+on 22{,}932 independent games (V2).
 All ten sanctioned cheating cases produce positive aggregate
 evidence ($+4.7$ to $+55.6\dB$, 7/10 exceeding $+10\dB$).  The
 hardest detection---Feller, a GM receiving partial SMS
@@ -1472,17 +1537,18 @@ assistance---yields $+20.8\dB$ over 9 games, confirming that
 per-player aggregation is essential for partial cheating by strong
 players.
 
-A pre-registered head-to-head comparison against four baselines
-(including a Regan-style two-signal approach) demonstrates
-statistically significant superiority across all conditions:
+A pre-specified head-to-head comparison against four baselines
+(including a two-signal approach inspired by Regan's framework)
+demonstrates statistically significant superiority across all
+conditions:
 \begin{itemize}[nosep]
   \item \textbf{Single-game}: 57.5\% TPR at 0.1\% FPR for
-    $r = 50\%$ vs 41.0\% for the Regan-style baseline
+    $r = 50\%$ vs 41.0\% for the two-signal baseline
     (OR = 5.47, $p < 10^{-137}$).
   \item \textbf{Per-player}: 87\% detection at 1\% FPR for
-    $r = 25\%$ with just 4 games, vs 64\% for the Regan-style baseline.
+    $r = 25\%$ with just 4 games, vs 64\% for the two-signal baseline.
   \item \textbf{Falsification}: Kasparov's 1999 brilliancy scores
-    $-4.9\dB$ (correctly cleared), while the Regan-style baseline
+    $-4.9\dB$ (correctly cleared), while the two-signal baseline
     would flag it at $+8.4\dB$.
 \end{itemize}
 
@@ -1599,7 +1665,7 @@ rating.
     Kasparov 1999      & single game        & dB               & $-4.9$ \\
     Fischer 1972       & single game        & dB               & $+3.5$ \\
     \midrule
-    \multicolumn{4}{@{}l}{\emph{Baseline comparison (M5 vs M2 Regan-style)}} \\
+    \multicolumn{4}{@{}l}{\emph{Baseline comparison (M5 vs M2 two-signal)}} \\
     $r{=}50\%$, FPR 0.1\%  & 5{,}000 games & TPR M5 vs M2 & 57.5\% vs 41.0\% \\
     $r{=}25\%$, $N{=}4$, FPR 1\% & per-player & TPR M5 vs M2 & 87\% vs 64\% \\
     \bottomrule

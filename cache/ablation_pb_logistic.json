@@ -1,0 +1,110 @@
+{
+  "honest_medians": {
+    "M1_t1_only": -10.574686326622077,
+    "M5_permove": -6.354273687187417,
+    "M6_pb_logistic": -10.852758817163629
+  },
+  "honest_p99": {
+    "M1_t1_only": 15.570512749733064,
+    "M5_permove": 12.18092511763743,
+    "M6_pb_logistic": 16.7398498714717
+  },
+  "thresholds": {
+    "M1_t1_only": {
+      "fpr_1pct": 15.570512749733064,
+      "fpr_01pct": 23.92320412148793
+    },
+    "M5_permove": {
+      "fpr_1pct": 12.18092511763743,
+      "fpr_01pct": 19.764120273941757
+    },
+    "M6_pb_logistic": {
+      "fpr_1pct": 16.7398498714717,
+      "fpr_01pct": 22.776096600716336
+    }
+  },
+  "results": {
+    "r0.1_fpr_1pct": {
+      "M1_t1_only": 0.0338,
+      "M5_permove": 0.0426,
+      "M6_pb_logistic": 0.0394
+    },
+    "r0.1_fpr_01pct": {
+      "M1_t1_only": 0.0042,
+      "M5_permove": 0.0102,
+      "M6_pb_logistic": 0.0088
+    },
+    "r0.25_fpr_1pct": {
+      "M1_t1_only": 0.1684,
+      "M5_permove": 0.2316,
+      "M6_pb_logistic": 0.1938
+    },
+    "r0.25_fpr_01pct": {
+      "M1_t1_only": 0.0342,
+      "M5_permove": 0.1004,
+      "M6_pb_logistic": 0.0782
+    },
+    "r0.5_fpr_1pct": {
+      "M1_t1_only": 0.7208,
+      "M5_permove": 0.8226,
+      "M6_pb_logistic": 0.7652
+    },
+    "r0.5_fpr_01pct": {
+      "M1_t1_only": 0.4086,
+      "M5_permove": 0.638,
+      "M6_pb_logistic": 0.572
+    },
+    "r1.0_fpr_1pct": {
+      "M1_t1_only": 1.0,
+      "M5_permove": 1.0,
+      "M6_pb_logistic": 0.9998
+    },
+    "r1.0_fpr_01pct": {
+      "M1_t1_only": 1.0,
+      "M5_permove": 0.9998,
+      "M6_pb_logistic": 0.9992
+    }
+  },
+  "mcnemar": {
+    "r0.1_mcnemar_fpr_01pct": {
+      "p_value": 0.24778856337070465,
+      "odds_ratio": 1.7,
+      "ci_low": 0.7784238739923011,
+      "ci_high": 3.7126302218585137,
+      "a_only": 17.0,
+      "b_only": 10.0,
+      "both": 34.0,
+      "neither": 4939.0
+    },
+    "r0.25_mcnemar_fpr_01pct": {
+      "p_value": 9.792769152265156e-17,
+      "odds_ratio": 3.9210526315789473,
+      "ci_low": 2.7460451915693755,
+      "ci_high": 5.598834930617261,
+      "a_only": 149.0,
+      "b_only": 38.0,
+      "both": 353.0,
+      "neither": 4460.0
+    },
+    "r0.5_mcnemar_fpr_01pct": {
+      "p_value": 1.0577744238036462e-61,
+      "odds_ratio": 6.892857142857143,
+      "ci_low": 5.208093146455801,
+      "ci_high": 9.122624779506703,
+      "a_only": 386.0,
+      "b_only": 56.0,
+      "both": 2804.0,
+      "neither": 1754.0
+    },
+    "r1.0_mcnemar_fpr_01pct": {
+      "p_value": 0.25,
+      "odds_ratio": 6.0,
+      "ci_low": 0.0,
+      "ci_high": Infinity,
+      "a_only": 3.0,
+      "b_only": 0.0,
+      "both": 4996.0,
+      "neither": 1.0
+    }
+  }
+}
