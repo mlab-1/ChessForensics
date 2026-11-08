@@ -864,6 +864,15 @@ def index() -> FileResponse:
 app.mount("/static", StaticFiles(directory=WEB), name="static")
 
 
+# SPA catch-all: serve index.html for browser navigation to unknown paths.
+# Excludes /api and /static prefixes so those are handled by their own routers/mounts.
+@app.get("/{full_path:path}")
+def spa_fallback(full_path: str) -> FileResponse:
+    if full_path.startswith("api/") or full_path.startswith("static/"):
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(WEB / "index.html")
+
+
 def main() -> None:
     import argparse
     import uvicorn

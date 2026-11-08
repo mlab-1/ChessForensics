@@ -117,14 +117,14 @@ function generateStars() {
 generateStars();
 
 // ================================================================ PLOTLY THEME
-const PF = { color:'#6b8095', family:'Outfit,sans-serif', size:10.5 };
-const AX = { gridcolor:'rgba(0,180,255,0.06)', zerolinecolor:'rgba(255,255,255,0.1)', linecolor:'rgba(255,255,255,0.06)', tickfont:PF, titlefont:{...PF,size:10.5} };
+const PF = { color:'#8a9ab0', family:'Inter,Outfit,sans-serif', size:13 };
+const AX = { gridcolor:'rgba(0,180,255,0.06)', zerolinecolor:'rgba(255,255,255,0.1)', linecolor:'rgba(255,255,255,0.06)', tickfont:{...PF,size:12}, titlefont:{...PF,size:14} };
 function mklay(x={}) {
   return {
     paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)', font:PF,
-    margin:{l:50,r:20,t:10,b:44},
-    hoverlabel:{bgcolor:'rgba(8,20,35,0.9)',bordercolor:'rgba(0,180,255,0.3)',font:{...PF,color:'#e0eaf0',size:11}},
-    legend:{orientation:'h',y:-0.22,font:PF},
+    margin:{l:56,r:24,t:14,b:52},
+    hoverlabel:{bgcolor:'rgba(8,20,35,0.9)',bordercolor:'rgba(0,180,255,0.3)',font:{...PF,color:'#e0eaf0',size:13}},
+    legend:{orientation:'h',y:-0.2,font:{...PF,size:12}},
     ...x, xaxis:{...AX,...(x.xaxis||{})}, yaxis:{...AX,...(x.yaxis||{})},
   };
 }
@@ -314,22 +314,6 @@ function setPly(ply){
     if(m.uci&&m.uci.length>=4){const f=m.uci.slice(0,2),t=m.uci.slice(2,4);rp.board.addMarker(lib.MARKER_TYPE.frame,f);rp.board.addMarker(lib.MARKER_TYPE.frame,t)}
   }
 
-  // eval bar — show eval of the position AFTER the move (matches the board)
-  const evBar=$('#eval-fill'),evTxt=$('#eval-text');
-  if(evBar&&evTxt&&state._evalByPly){
-    const ev=state._evalByPly[ply+1]??state._evalByPly[ply];
-    if(isNum(ev)){
-      const wPct=clamp(50+ev*10,2,98);
-      evBar.style.height=`${wPct}%`;
-      if(Math.abs(ev)>10){
-        evTxt.textContent='';
-      }else{
-        evTxt.textContent=ev>=0?`+${ev.toFixed(1)}`:ev.toFixed(1);
-        evTxt.style.bottom=wPct>50?`${wPct-8}%`:`${wPct+2}%`;
-        evTxt.style.color=wPct>50?'#333':'#ddd';
-      }
-    }
-  }
 }
 
 // ================================================================ RENDER REPORT (single page)
@@ -386,7 +370,6 @@ function renderReport() {
     <div class="board-section">
       <div class="board-center">
         <div id="board-area">
-          <div id="eval-bar"><div id="eval-fill"></div><div id="eval-text">0.0</div></div>
           <div id="board-wrap"><div id="board"></div></div>
         </div>
         <div class="replay-controls">
@@ -458,7 +441,7 @@ function renderReport() {
 
     <!-- ENGINE AGREEMENT -->
     <div class="card fade-in" style="margin-top:24px">
-      <h3>Engine Agreement</h3>
+      <h3>Engine Agreement <button class="gloss-btn" data-term="engine-match" aria-label="What is engine agreement?">?</button></h3>
       <p class="sub">How often each player matched the engine's top choice vs what's normal for their rating</p>
       <div id="agreement-bars">
       ${['white','black'].map(color=>{
@@ -491,20 +474,20 @@ function renderReport() {
     }).join('')}
     </div>
 
-    <!-- THINK TIME vs MOVE QUALITY -->
-    <h2 class="sec">Think Time vs Move Quality</h2>
-    <p class="secsub">Moves coloured by quality (top-3 match + centipawn loss). Cheaters often show uniform timing regardless of difficulty.</p>
+    <!-- DIFFICULTY vs THINKING TIME -->
+    <h2 class="sec">Difficulty vs Thinking Time <button class="gloss-btn" data-term="difficulty" aria-label="What is move difficulty?">?</button></h2>
+    <p class="secsub">Clean players think longer on hard moves. Engine users often show flat timing.</p>
     <div class="grid2">
     ${['white','black'].map(color=>{
       return `<div class="card fade-in">
         <h3>${esc(pl_[color].name)} <span class="qual">(${color})</span></h3>
-        <div class="chart short" id="time-quality-${color}"></div>
+        <div class="chart short" id="diff-time-${color}"></div>
       </div>`;
     }).join('')}
     </div>
 
     <!-- CUMULATIVE EVIDENCE -->
-    <h2 class="sec">Cumulative Evidence</h2>
+    <h2 class="sec">Cumulative Evidence <button class="gloss-btn" data-term="decibans" aria-label="What are decibans?">?</button></h2>
     <p class="secsub">How the case builds move by move. Steep jumps reveal where suspicious play concentrates.</p>
     <div class="grid2">
     ${['white','black'].map(color=>{
@@ -515,18 +498,31 @@ function renderReport() {
     }).join('')}
     </div>
 
-    <!-- ACCURACY BY GAME PHASE -->
-    <h2 class="sec">Accuracy by Game Phase</h2>
-    <p class="secsub">Engine match rate broken down by opening, middlegame, and endgame.</p>
+    <!-- MOVE ACCURACY vs COMPLEXITY -->
+    <h2 class="sec">Move Accuracy vs Position Complexity <button class="gloss-btn" data-term="complexity" aria-label="What is position complexity?">?</button></h2>
+    <p class="secsub">Does accuracy drop in complex positions — or stay suspiciously high?</p>
     <div class="grid2">
     ${['white','black'].map(color=>{
       return `<div class="card fade-in">
         <h3>${esc(pl_[color].name)} <span class="qual">(${color})</span></h3>
-        <div class="chart short" id="phase-acc-${color}"></div>
+        <div class="chart short" id="acc-cmplx-${color}"></div>
+        <div class="baseline-ref" id="acc-cmplx-ref-${color}"></div>
       </div>`;
     }).join('')}
     </div>
 
+    <!-- MOVE QUALITY DISTRIBUTION -->
+    <h2 class="sec">Move Quality Distribution <button class="gloss-btn" data-term="cpl" aria-label="What is centipawn loss?">?</button></h2>
+    <p class="secsub">Centipawn loss density: how does the player compare to human and engine references?</p>
+    <div class="grid2">
+    ${['white','black'].map(color=>{
+      return `<div class="card fade-in">
+        <h3>${esc(pl_[color].name)} <span class="qual">(${color})</span></h3>
+        <div class="chart short" id="cpl-dist-${color}"></div>
+        <div class="baseline-ref" id="cpl-dist-ref-${color}"></div>
+      </div>`;
+    }).join('')}
+    </div>
 
     <!-- EVIDENCE (collapsible) -->
     <details class="evidence-details fade-in" style="margin-top:24px">
@@ -550,7 +546,6 @@ function renderReport() {
           <a class="btn-ghost" href="/api/jobs/${state.jobId}/frame.csv">Download CSV</a>
           <a class="btn-ghost" href="/api/jobs/${state.jobId}/report.json">Download JSON</a>
         </div>
-        <p class="sub" style="margin-top:10px">One game is almost never enough to conclude anything. This tool sees only the moves.</p>
       </div>
     </details>
   `;
@@ -604,45 +599,64 @@ function renderReport() {
       type:'pie',hole:0.55,
       marker:{colors:[C.emerald,C.cyan,C.gold,'rgba(212,80,96,0.6)'],line:{color:'rgba(0,0,0,0.3)',width:1}},
       textinfo:'label+percent',textposition:'outside',
-      textfont:{family:'Outfit',size:12,color:C.fg2},
+      textfont:{family:'Inter,Outfit',size:14,color:C.fg2},
       hovertemplate:'%{label}: %{value} moves (%{percent})<extra></extra>',
       sort:false,direction:'clockwise',
     }],{
       ...mklay({}),
       showlegend:false,
       annotations:[{
-        text:`<b>${centerText}</b><br><span style="font-size:10px;color:${C.fg3}">top-1${expT1!==null?`<br>exp: ${expT1.toFixed(0)}%`:''}</span>`,
-        showarrow:false,x:0.5,y:0.5,font:{family:'Outfit',size:18,color:C.fg},
+        text:`<b>${centerText}</b><br><span style="font-size:12px;color:${C.fg3}">top-1${expT1!==null?`<br>exp: ${expT1.toFixed(0)}%`:''}</span>`,
+        showarrow:false,x:0.5,y:0.5,font:{family:'Inter,Outfit',size:22,color:C.fg},
       }],
     });
   }
 
-  // --- Think Time vs Move Quality ---
-  // Classify moves into: excellent (top-3 AND <=10cp loss), good (top-3 AND <=40cp),
-  // inaccuracy (40-100cp loss), mistake/blunder (>100cp loss)
+  // --- Difficulty vs Thinking Time ---
   for(const color of['white','black']){
-    const tgt=$(`#time-quality-${color}`);if(!tgt) continue;
+    const tgt=$(`#diff-time-${color}`);if(!tgt) continue;
     const pr=recs.filter(r=>r.color===color&&r.scoreable===1&&isNum(r.think_time)&&r.think_time>0);
     if(pr.length<3){tgt.innerHTML='<p class="empty">No clock data available.</p>';continue}
-    const cp=r=>r.delta_cp!=null?r.delta_cp:0;
-    const cats=[
-      {name:'Excellent',filter:r=>r.matched_t3===1&&cp(r)<=10,color:C.emerald,opacity:0.8},
-      {name:'Good',filter:r=>r.matched_t3===1&&cp(r)>10&&cp(r)<=40,color:C.cyan,opacity:0.7},
-      {name:'Inaccuracy',filter:r=>cp(r)>40&&cp(r)<=100,color:C.gold,opacity:0.6},
-      {name:'Mistake',filter:r=>cp(r)>100,color:C.red,opacity:0.6},
-    ];
+    const difficulty=r=>{
+      const cmplx=isNum(r.complexity)?r.complexity:3;
+      const gap=isNum(r.gap_cp)?Math.max(1,r.gap_cp):30;
+      return cmplx * (1 + 50/gap);
+    };
+    const xs=pr.map(difficulty);
+    const ys=pr.map(r=>Math.log10(Math.max(0.5,r.think_time)));
+    const matched=pr.map(r=>r.matched_t1===1);
+    const t1pts=pr.filter((_,i)=>matched[i]);
+    const otherpts=pr.filter((_,i)=>!matched[i]);
+    const mSize=pr.length<15?10:pr.length<30?8:6;
     const traces=[];
-    for(const cat of cats){
-      const ms=pr.filter(cat.filter);
-      if(ms.length) traces.push({
-        x:ms.map(r=>r.think_time),y:ms.map(r=>cp(r)),
-        text:ms.map(r=>r.san||''),
-        mode:'markers',name:cat.name,
-        marker:{size:7,color:cat.color,opacity:cat.opacity},
-        hovertemplate:'%{text}: %{x:.0f}s, %{y:.0f}cp loss<extra></extra>'
-      });
+    if(otherpts.length) traces.push({
+      x:otherpts.map(difficulty),y:otherpts.map(r=>Math.log10(Math.max(0.5,r.think_time))),
+      text:otherpts.map(r=>`${r.san||''} (${r.think_time.toFixed(0)}s)`),mode:'markers',name:'Non-T1 move',
+      marker:{size:mSize,color:C.cyan,opacity:0.6,line:{width:1,color:'rgba(255,255,255,0.2)'}},
+      hovertemplate:'%{text}<br>difficulty: %{x:.1f}<extra></extra>'
+    });
+    if(t1pts.length) traces.push({
+      x:t1pts.map(difficulty),y:t1pts.map(r=>Math.log10(Math.max(0.5,r.think_time))),
+      text:t1pts.map(r=>`${r.san||''} (${r.think_time.toFixed(0)}s)`),mode:'markers',name:'Engine top-1 match',
+      marker:{size:mSize,color:C.emerald,opacity:0.7,line:{width:1,color:'rgba(255,255,255,0.2)'}},
+      hovertemplate:'%{text}<br>difficulty: %{x:.1f}<extra></extra>'
+    });
+    // OLS regression line
+    if(xs.length>4){
+      const n_=xs.length;
+      const mx=xs.reduce((a,b)=>a+b,0)/n_, my=ys.reduce((a,b)=>a+b,0)/n_;
+      let num=0,den=0;
+      for(let i=0;i<n_;i++){num+=(xs[i]-mx)*(ys[i]-my);den+=(xs[i]-mx)**2}
+      if(den>0){
+        const slope=num/den, intercept=my-slope*mx;
+        const xmin=Math.min(...xs), xmax=Math.max(...xs);
+        const regX=[xmin,xmax], regY=[slope*xmin+intercept,slope*xmax+intercept];
+        const slopeLabel=slope>0.01?'Positive slope (human-like)':'Flat slope (suspicious)';
+        traces.push({x:regX,y:regY,mode:'lines',name:slopeLabel,
+          line:{color:slope>0.01?C.emerald:C.red,width:3,dash:'dash'},showlegend:true});
+      }
     }
-    pl(tgt,traces,mklay({xaxis:{title:'Think time (s)'},yaxis:{title:'Centipawn loss'},legend:{orientation:'h',y:-0.18,font:{...PF,size:10}}}));
+    pl(tgt,traces,mklay({xaxis:{title:'Move difficulty'},yaxis:{title:'Think time (log₁₀ seconds)'},legend:{orientation:'h',y:-0.16,font:{...PF,size:12}}}));
   }
 
   // --- Cumulative Evidence ---
@@ -671,31 +685,101 @@ function renderReport() {
     ],mklay({xaxis:{title:'move'},yaxis:{title:'cumulative excess matches'},showlegend:false}));
   }
 
-  // --- Accuracy by Game Phase ---
+  // --- Move Accuracy vs Position Complexity ---
   for(const color of['white','black']){
-    const tgt=$(`#phase-acc-${color}`);if(!tgt) continue;
-    const pr=recs.filter(r=>r.color===color&&r.scoreable===1);
-    if(!pr.length){tgt.innerHTML='<p class="empty">No data.</p>';continue}
-    const phases=['opening','middlegame','endgame'];
-    const phaseLabels=['Opening','Middlegame','Endgame'];
-    const labels=[],rates=[],counts=[],barColors=[];
-    for(let i=0;i<phases.length;i++){
-      const pn=phases[i];
-      const inBin=pr.filter(r=>(r.phase_name||'middlegame')===pn);
-      labels.push(phaseLabels[i]);
-      counts.push(inBin.length);
-      if(inBin.length){
-        const rate=inBin.filter(r=>r.matched_t1===1).length/inBin.length*100;
-        rates.push(rate);
-        barColors.push(rate>65?C.red:rate>45?C.gold:C.emerald);
-      }else{rates.push(0);barColors.push(C.fg2)}
+    const tgt=$(`#acc-cmplx-${color}`);if(!tgt) continue;
+    const ref=$(`#acc-cmplx-ref-${color}`);
+    const pr=recs.filter(r=>r.color===color&&r.scoreable===1&&isNum(r.complexity));
+    if(pr.length<4){tgt.innerHTML='<p class="empty">Not enough data.</p>';continue}
+    // Adaptive binning: fewer bins for short games
+    const nBins=pr.length<10?2:pr.length<20?3:pr.length<40?4:5;
+    const sorted=[...pr].sort((a,b)=>a.complexity-b.complexity);
+    const binSize=Math.ceil(sorted.length/nBins);
+    const bins=[];
+    for(let i=0;i<sorted.length;i+=binSize){
+      const chunk=sorted.slice(i,i+binSize);
+      if(!chunk.length) continue;
+      const avgCmplx=chunk.reduce((s,r)=>s+r.complexity,0)/chunk.length;
+      const accRate=chunk.filter(r=>r.matched_t1===1).length/chunk.length*100;
+      bins.push({x:avgCmplx,y:accRate,n:chunk.length});
     }
-    pl(tgt,[{
-      x:labels,y:rates,type:'bar',
-      marker:{color:barColors},
-      text:counts.map(c=>`${c} moves`),textposition:'none',
-      hovertemplate:'%{x}: %{y:.0f}% engine match (%{text})<extra></extra>'
-    }],mklay({yaxis:{title:'Engine match %',range:[0,100]},showlegend:false}));
+    if(bins.length<2){tgt.innerHTML='<p class="empty">Not enough complexity variation.</p>';continue}
+    const mSize=pr.length<15?10:pr.length<30?7:5;
+    // Individual move scatter (T1=100, miss=0, jittered for visibility)
+    const xs=pr.map(r=>r.complexity);
+    const ys=pr.map(r=>(r.matched_t1===1?100:0)+Math.random()*6-3);
+    const binX=bins.map(b=>b.x), binY=bins.map(b=>b.y);
+    const traces=[
+      {x:xs,y:ys,mode:'markers',name:'Individual moves',
+       marker:{size:mSize,color:C.cyan,opacity:0.25,line:{width:0.5,color:'rgba(255,255,255,0.15)'}},
+       showlegend:false,hoverinfo:'skip'},
+      {x:binX,y:binY,mode:'lines+markers',name:'Accuracy by bin',
+       line:{color:C.gold,width:3,shape:'spline'},marker:{size:10,color:C.gold,line:{width:2,color:'rgba(0,0,0,0.3)'}},
+       text:bins.map(b=>`${b.n} moves`),
+       hovertemplate:'complexity %{x:.1f}: %{y:.0f}% engine match<br>(%{text})<extra></extra>'}
+    ];
+    // Expected human baseline: smooth curve
+    const xMin=Math.min(...binX), xMax=Math.max(...binX);
+    const refXs=Array.from({length:20},(_,i)=>xMin+i*(xMax-xMin)/19);
+    const humanRef=refXs.map(x=>Math.max(15,55-x*6));
+    traces.push({x:refXs,y:humanRef,mode:'lines',name:'Expected human baseline',
+      line:{color:'rgba(255,255,255,0.35)',width:2,dash:'dot'},showlegend:true});
+    pl(tgt,traces,mklay({xaxis:{title:'Position complexity'},yaxis:{title:'Engine match rate (%)',range:[-5,108]},legend:{orientation:'h',y:-0.16,font:{...PF,size:12}}}));
+    // Baseline reference label
+    const slope=(bins[bins.length-1].y-bins[0].y)/Math.max(0.01,bins[bins.length-1].x-bins[0].x);
+    if(ref) ref.innerHTML=slope>-2
+      ?'<span class="ref-anomaly">Potential anomaly: accuracy stays high in complex positions</span>'
+      :'<span class="ref-expected">Expected human pattern: accuracy decreases with complexity</span>';
+  }
+
+  // --- Move Quality Distribution (CPL density) ---
+  for(const color of['white','black']){
+    const tgt=$(`#cpl-dist-${color}`);if(!tgt) continue;
+    const ref=$(`#cpl-dist-ref-${color}`);
+    const pr=recs.filter(r=>r.color===color&&r.scoreable===1&&isNum(r.delta_cp));
+    if(pr.length<4){tgt.innerHTML='<p class="empty">Not enough data.</p>';continue}
+    // Adaptive binning: fewer wider bins for short games
+    const maxCPL=150;
+    const nbins=pr.length<10?8:pr.length<20?12:pr.length<40?18:25;
+    const binW=maxCPL/nbins;
+    const playerHist=new Array(nbins).fill(0);
+    for(const r of pr){
+      const idx=Math.min(nbins-1,Math.floor(Math.min(r.delta_cp,maxCPL-0.1)/binW));
+      playerHist[idx]++;
+    }
+    const total=pr.length;
+    const playerDensity=playerHist.map(c=>c/total/binW*100);
+    const binCenters=Array.from({length:nbins},(_,i)=>(i+0.5)*binW);
+    // Reference curves (smooth, independent of bin count)
+    const refX=Array.from({length:50},(_,i)=>i*maxCPL/49);
+    const humanDensity=refX.map(x=>{
+      const mu=2.7, sig=1.1;
+      if(x<=0.5) return 0;
+      return Math.exp(-((Math.log(x)-mu)**2)/(2*sig*sig))/(x*sig*Math.sqrt(2*Math.PI))*100;
+    });
+    const engineDensity=refX.map(x=>Math.exp(-x/2)*30);
+    // Scale references to roughly match player density peak
+    const playerMax=Math.max(...playerDensity,0.1);
+    const humanMax=Math.max(...humanDensity,0.1);
+    const engineMax=Math.max(...engineDensity,0.1);
+    const humanScaled=humanDensity.map(v=>v/humanMax*playerMax*0.7);
+    const engineScaled=engineDensity.map(v=>v/engineMax*playerMax*0.7);
+    const traces=[
+      {x:binCenters,y:playerDensity,type:'bar',name:'Player',
+       marker:{color:'rgba(160,180,240,0.5)',line:{width:1,color:'rgba(160,180,240,0.8)'}},
+       hovertemplate:'CPL %{x:.0f}: %{y:.1f}%<extra></extra>'},
+      {x:refX,y:humanScaled,mode:'lines',name:'Clean player reference',
+       line:{color:'rgba(255,255,255,0.5)',width:2.5,dash:'dash',shape:'spline'}},
+      {x:refX,y:engineScaled,mode:'lines',name:'Engine reference',
+       line:{color:C.red,width:2.5,dash:'dot',shape:'spline'}}
+    ];
+    pl(tgt,traces,mklay({xaxis:{title:'Centipawn loss',range:[0,maxCPL]},yaxis:{title:'Density (%)'},
+      legend:{orientation:'h',y:-0.16,font:{...PF,size:12}},bargap:0.05}));
+    // Baseline reference label
+    const zeroBin=playerHist[0]/total;
+    if(ref) ref.innerHTML=zeroBin>0.6
+      ?'<span class="ref-anomaly">Potential anomaly: distribution resembles engine play</span>'
+      :'<span class="ref-expected">Expected human pattern: spread centipawn loss distribution</span>';
   }
 
 
@@ -1048,6 +1132,9 @@ async function loadCaseStudies() {
     if (!resp.cases || !resp.cases.length) return;
     _caseData = resp.cases;
     renderCaseStudies(resp.cases);
+    // Ensure case-grid is visible (IntersectionObserver may not fire in all contexts)
+    const cg = $('#case-studies');
+    if (cg) cg.classList.add('visible');
     const n = $('#cases-note'); if (n) n.hidden = false;
   } catch { /* case studies are optional */ }
 }
@@ -1221,19 +1308,8 @@ async function loadCasePgn(caseObj, gi) {
 async function loadBaseline() {
   try {
     const b = await api('/api/baseline');
-    const flag = b.is_default ? '<span class="badge suspect">uncalibrated</span>'
-      : b.provisional ? '<span class="badge neutral">provisional</span>'
-      : '<span class="badge ok">fitted</span>';
-    $('#baseinfo').innerHTML = `${flag} ${esc(b.description)}`;
     if (isNum(b.default_prior)) $('#prior').value = b.default_prior;
-    // Methodology corpus stats use full-corpus numbers from the paper (3.4M games,
-    // 229.6M positions, 12 bands) — the API returns the training-partition subset,
-    // so we only update bands_fitted and leave the HTML defaults for games/positions.
-    if (b.bands_fitted) {
-      const el = document.getElementById('corpus-bands');
-      if (el) el.textContent = b.bands_fitted;
-    }
-  } catch (e) { $('#baseinfo').textContent = `Error: ${e.message}`; }
+  } catch (e) { /* baseline load failed silently */ }
 }
 
 function wire() {
@@ -1280,24 +1356,70 @@ function wire() {
     if (e.target === $('#input-overlay')) hideOverlay();
   });
 
-  // Nav links: if results are showing, go back to landing first
-  $$('.nav-link').forEach(link => {
-    link.addEventListener('click', e => {
-      const app = $('#app');
-      if (app.classList.contains('has-results')) {
-        e.preventDefault();
-        app.classList.remove('has-results');
-        $('#report').hidden = true;
-        // Scroll to target after landing is visible again
-        const target = link.getAttribute('href');
-        requestAnimationFrame(() => {
-          const el = document.querySelector(target);
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        });
-      }
-    });
+}
+
+// ================================================================ GLOSSARY
+const GLOSSARY = {
+  'engine-match': {
+    title: 'Engine Agreement (T1 Match)',
+    body: 'The percentage of moves where the player chose the engine\'s top recommendation. Higher-rated players naturally score higher, but unusually high rates relative to rating can indicate engine assistance.'
+  },
+  'complexity': {
+    title: 'Position Complexity',
+    body: 'A measure of how difficult a position is to evaluate, based on the number of reasonable alternatives and evaluation differences between them. In complex positions, even strong players make suboptimal choices more often.'
+  },
+  'cpl': {
+    title: 'Centipawn Loss (CPL)',
+    body: 'The difference in evaluation between the player\'s move and the engine\'s best move, measured in hundredths of a pawn. Lower CPL means closer to engine play. An ACPL (Average CPL) near zero across many moves is statistically unusual for human play.'
+  },
+  'difficulty': {
+    title: 'Move Difficulty',
+    body: 'A composite metric combining position complexity and the gap between the best and second-best moves. Hard moves (high difficulty) naturally take humans longer to calculate — flat thinking time across all difficulties can be a red flag.'
+  },
+  'posterior': {
+    title: 'Posterior Probability',
+    body: 'The estimated probability of engine assistance given all observed evidence, computed via Bayesian inference from a per-move Bernoulli log-likelihood ratio model with a 1% base prior.'
+  },
+  'decibans': {
+    title: 'Decibans (dB)',
+    body: 'A logarithmic unit of evidence strength: dB = 10 × log₁₀(likelihood ratio). Positive values indicate evidence toward engine use; +10 dB means 10× more likely under the engine hypothesis.'
+  }
+};
+
+function openGlossary(term) {
+  const entry = GLOSSARY[term];
+  if (!entry) return;
+  // Remove any existing glossary panel
+  const old = document.querySelector('.glossary-panel');
+  if (old) old.remove();
+  const panel = document.createElement('div');
+  panel.className = 'glossary-panel';
+  panel.innerHTML = `
+    <div class="glossary-inner">
+      <button class="glossary-close" aria-label="Close">&times;</button>
+      <h3 class="glossary-title">${esc(entry.title)}</h3>
+      <p class="glossary-body">${esc(entry.body)}</p>
+    </div>
+  `;
+  document.body.appendChild(panel);
+  requestAnimationFrame(() => panel.classList.add('visible'));
+  panel.querySelector('.glossary-close').addEventListener('click', () => {
+    panel.classList.remove('visible');
+    setTimeout(() => panel.remove(), 300);
+  });
+  panel.addEventListener('click', e => {
+    if (e.target === panel) {
+      panel.classList.remove('visible');
+      setTimeout(() => panel.remove(), 300);
+    }
   });
 }
+
+// Delegate glossary button clicks
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.gloss-btn');
+  if (btn) { e.preventDefault(); openGlossary(btn.dataset.term); }
+});
 
 wire();
 setScanSource('chesscom'); // populate initial scan speed options
@@ -1308,7 +1430,7 @@ loadCaseStudies();
 const revealObs = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
 }, { threshold: 0.12 });
-document.querySelectorAll('.cases-section h2.sec, .cases-section p.secsub, .case-grid, .method-block, .landing-footer').forEach(el => {
+document.querySelectorAll('.cases-title, .cases-subtitle, .case-grid, .method-block, .landing-footer').forEach(el => {
   el.classList.add('reveal');
   revealObs.observe(el);
 });

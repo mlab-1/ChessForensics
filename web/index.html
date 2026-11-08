@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chess Forensics</title>
-<link rel="stylesheet" href="/static/styles.css">
+<link rel="stylesheet" href="/static/styles.css?v=11">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cm-chessboard@8.7.5/assets/chessboard.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cm-chessboard@8.7.5/assets/extensions/markers/markers.css">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <svg width="0" height="0" style="position:absolute"><defs>
   <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/>
     <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
@@ -15,30 +16,48 @@
   <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto">
     <polygon points="0 0, 6 2, 0 4" fill="currentColor" opacity="0.7"/>
   </marker>
+  <!-- Marble texture + 3D relief for background -->
+  <filter id="ix-marble" x="-2%" y="-2%" width="104%" height="104%" color-interpolation-filters="sRGB">
+    <!-- Marble veining: fractal noise for stone grain -->
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.025" numOctaves="5" seed="3" result="noise"/>
+    <!-- Diffuse lighting: subtle 3D relief from noise bump map -->
+    <feDiffuseLighting in="noise" surfaceScale="2.5" diffuseConstant="0.9" lighting-color="#ffffff" result="lit">
+      <feDistantLight azimuth="225" elevation="40"/>
+    </feDiffuseLighting>
+    <!-- Blend: mostly original color + subtle lighting texture -->
+    <feComposite in="lit" in2="SourceGraphic" operator="arithmetic" k1="0.10" k2="0.92" k3="0" k4="0" result="marbled"/>
+    <!-- Specular highlights: polished stone reflections -->
+    <feSpecularLighting in="noise" surfaceScale="2" specularConstant="0.45" specularExponent="20" lighting-color="#ffffff" result="spec">
+      <feDistantLight azimuth="225" elevation="50"/>
+    </feSpecularLighting>
+    <!-- Add specular shine on top -->
+    <feComposite in="spec" in2="marbled" operator="arithmetic" k1="0" k2="1" k3="0.18" k4="0"/>
+  </filter>
 </defs></svg>
 </head>
 <body>
 
 <div id="cosmos">
+  <div class="cosmos-board"></div>
+  <div class="cosmos-marble"></div>
+  <div class="cosmos-vignette"></div>
+  <div class="cosmos-light"></div>
   <div class="orb o1"></div>
   <div class="orb o2"></div>
   <div class="orb o3"></div>
-  <div class="orb o4"></div>
-  <div class="orb o5"></div>
 </div>
 
 <div id="app">
 
-  <!-- STICKY NAV (always visible) -->
-  <header id="topbar">
-    <span class="logo-sm">CHESS FORENSICS</span>
-    <nav class="topbar-right">
-      <a href="#features" class="nav-link">Features</a>
-      <a href="#cases-section" class="nav-link">Cases</a>
-      <a href="#methodology" class="nav-link">The Project</a>
-      <button class="btn-ghost" id="open-input">New Analysis</button>
-    </nav>
-  </header>
+  <!-- FLOATING NEW ANALYSIS BUTTON -->
+  <button class="btn-wood" id="open-input" aria-label="New Analysis">
+    <span class="btn-wood-squares">
+      <span class="wood-sq wood-light"></span>
+      <span class="wood-sq wood-dark"></span>
+      <span class="wood-sq wood-light"></span>
+    </span>
+    <span class="btn-wood-label">New Analysis</span>
+  </button>
 
   <!-- INPUT OVERLAY (modal, shown on demand) -->
   <div id="input-overlay" class="hidden">
@@ -138,7 +157,6 @@
       </details>
 
       <button class="btn-cosmic" id="run">Analyse</button>
-      <div id="baseinfo" class="hint" style="margin-top:8px;text-align:center">loading reference model...</div>
     </div>
   </div>
 
@@ -164,409 +182,79 @@
     <!-- LANDING PAGE -->
     <section id="welcome">
 
-      <!-- HERO -->
+      <!-- ============================================================ -->
+      <!-- 01 · HERO                                                    -->
+      <!-- ============================================================ -->
       <div class="hero">
         <div class="hero-inner">
           <div class="hero-badge">Bayesian Engine-Correlation Analysis</div>
           <h1 class="hero-title">Chess Forensics</h1>
-          <p class="hero-desc">Detect engine assistance in chess games through multi-signal statistical analysis. Honest uncertainty. No false certainty.</p>
+          <p class="hero-desc">Detecting patterns beyond the board.</p>
           <div class="hero-actions">
-            <button class="btn-cosmic" id="hero-cta" style="width:auto;padding:16px 48px">Start Analysis</button>
-            <a href="#cases-section" class="btn-ghost hero-scroll">See documented cases</a>
-            <a href="#methodology" class="btn-ghost hero-scroll">The Project</a>
+            <button class="btn-cosmic" id="hero-cta" style="width:auto;padding:20px 60px;font-size:16px">Start Analysis</button>
+            <a href="https://github.com/mlab-1/ChessForensics" target="_blank" rel="noopener" class="btn-ghost" id="hero-github" style="display:inline-flex;align-items:center;gap:10px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              View on GitHub
+            </a>
+          </div>
+          <div class="hero-scroll-hint">
+            <span>Scroll to investigate</span>
+            <svg width="16" height="24" viewBox="0 0 16 24" fill="none"><path d="M8 4v12M3 12l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           </div>
         </div>
       </div>
 
-      <!-- CASE STUDIES -->
+      <!-- ============================================================ -->
+      <!-- 02 · INTERACTIVE ANALYSIS EXPERIENCE                         -->
+      <!-- ============================================================ -->
+      <div id="ix-section" class="ix-section">
+        <div class="ix-stage" id="ix-stage">
+          <div class="ix-layout">
+            <!-- Left: terminal -->
+            <div class="ix-left">
+              <div class="ix-terminal" id="ix-terminal">
+                <div class="ix-term-header">
+                  <div class="ix-term-status"></div>
+                  <span class="ix-term-title">Stockfish 16 &bull; Analysis in progress...</span>
+                  <div class="ix-term-controls">
+                    <span class="ix-term-btn">&minus;</span>
+                    <span class="ix-term-btn">&#9723;</span>
+                    <span class="ix-term-btn">&times;</span>
+                  </div>
+                </div>
+                <div class="ix-term-body" id="ix-term-body"></div>
+              </div>
+            </div>
+
+            <!-- Right: board -->
+            <div class="ix-right">
+              <div class="ix-board-wrap">
+                <div class="ix-board" id="ix-board"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- 03 · DOCUMENTED CASES                                        -->
+      <!-- ============================================================ -->
       <div id="cases-section" class="cases-section">
-        <h2 class="sec">Documented Cases</h2>
-        <p class="secsub">The pipeline validated against confirmed professional cheating cases with known outcomes</p>
+        <div class="cases-header">
+          <h2 class="cases-title">Investigated Cases</h2>
+          <p class="cases-subtitle">Historical investigations validated against known outcomes</p>
+        </div>
         <div id="case-studies" class="case-grid"></div>
         <p class="cases-note" id="cases-note" hidden>All analyses performed at depth 12 with shipped default baselines. Statistical evidence should never be the sole basis for accusations.</p>
-      </div>
-
-      <!-- ============================================================ -->
-      <!-- METHODOLOGY — "Behind the Science"                          -->
-      <!-- ============================================================ -->
-      <div id="methodology" class="method-section">
-
-        <!-- INTRO -->
-        <div class="method-block">
-          <h2 class="sec">The Project</h2>
-          <p class="secsub">The problems, the math, the validation, and the honest limitations behind detecting engine-assisted play.</p>
-        </div>
-
-        <!-- 1. THE PROBLEM -->
-        <div class="method-block">
-          <div class="method-card">
-            <span class="method-tag">The Problem</span>
-            <h3>Detecting cheating in chess is genuinely hard</h3>
-            <p>When a player uses a chess engine during a game, their moves will look more like what a computer would play. But here's the catch: <strong>strong players also match the engine often</strong>. A grandmaster's best game might look just like a cheater's average game.</p>
-            <p>Any detection system has to solve three problems at once:</p>
-            <div class="method-challenges">
-              <div class="method-challenge">
-                <div class="mc-icon">
-                  <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="var(--gold)" stroke-width="2" opacity="0.6"/><text x="20" y="25" text-anchor="middle" font-size="16" fill="var(--gold)">?</text></svg>
-                </div>
-                <div>
-                  <strong>False positives are catastrophic</strong>
-                  <p>Wrongly accusing a clean player can end a career. The system must be conservative.</p>
-                </div>
-              </div>
-              <div class="method-challenge">
-                <div class="mc-icon">
-                  <svg viewBox="0 0 40 40"><rect x="6" y="6" width="28" height="28" rx="4" fill="none" stroke="var(--cyan)" stroke-width="2" opacity="0.6"/><text x="20" y="25" text-anchor="middle" font-size="14" fill="var(--cyan)">&#9822;</text></svg>
-                </div>
-                <div>
-                  <strong>Skill varies enormously</strong>
-                  <p>What's suspicious for a 1200 is normal for a 2600. One size does not fit all.</p>
-                </div>
-              </div>
-              <div class="method-challenge">
-                <div class="mc-icon">
-                  <svg viewBox="0 0 40 40"><line x1="8" y1="32" x2="32" y2="8" stroke="var(--red)" stroke-width="2" opacity="0.6"/><line x1="8" y1="8" x2="32" y2="32" stroke="var(--red)" stroke-width="2" opacity="0.6"/></svg>
-                </div>
-                <div>
-                  <strong>One metric is never enough</strong>
-                  <p>Engine match rate alone is too noisy. You need multiple independent signals combined properly.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. THE APPROACH -->
-        <div class="method-block">
-          <div class="method-card">
-            <span class="method-tag">The Approach</span>
-            <h3>Bayesian evidence combination</h3>
-            <p>Instead of a binary "cheater or not" threshold, we use <strong>Bayes' theorem</strong> to compute the probability of engine assistance given the evidence. This is the same mathematical framework used in medical testing, courtroom forensics, and spam filtering.</p>
-
-            <div class="method-formula">
-              <div class="mf-box">
-                <div class="mf-label">Start with a prior</div>
-                <div class="mf-val">1%</div>
-                <div class="mf-desc">Base rate of cheating</div>
-              </div>
-              <div class="mf-arrow">&rarr;</div>
-              <div class="mf-box">
-                <div class="mf-label">Collect evidence</div>
-                <div class="mf-val">+14.3 dB</div>
-                <div class="mf-desc">Combined from all signals</div>
-              </div>
-              <div class="mf-arrow">&rarr;</div>
-              <div class="mf-box mf-result">
-                <div class="mf-label">Get a posterior</div>
-                <div class="mf-val">21.3%</div>
-                <div class="mf-desc">Updated probability</div>
-              </div>
-            </div>
-
-            <p>Evidence is measured in <strong>decibans (dB)</strong> &mdash; a logarithmic scale where +10 dB means "10&times; more likely cheating" and &minus;10 dB means "10&times; more likely clean." This lets evidence from different signals and different games simply <em>add up</em>.</p>
-          </div>
-        </div>
-
-        <!-- 3. THE SIGNALS -->
-        <div class="method-block">
-          <div class="method-card">
-            <span class="method-tag">The Signals</span>
-            <h3>What we actually measure</h3>
-            <p>Each game is run through Stockfish (one of the world's strongest engines), which evaluates every position and finds the best moves. From this analysis we extract:</p>
-
-            <div class="method-signals-grid">
-              <div class="ms-item">
-                <div class="ms-head">
-                  <svg viewBox="0 0 24 24" class="ms-icon"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--emerald)" stroke-width="1.5"/><path d="M8 12l3 3 5-6" fill="none" stroke="var(--emerald)" stroke-width="1.5"/></svg>
-                  <strong>Engine match rate</strong>
-                </div>
-                <p>How often the player's move matches the engine's #1 choice. Expected range depends heavily on rating.</p>
-              </div>
-              <div class="ms-item">
-                <div class="ms-head">
-                  <svg viewBox="0 0 24 24" class="ms-icon"><rect x="3" y="14" width="4" height="7" fill="var(--cyan)" rx="1" opacity="0.5"/><rect x="10" y="8" width="4" height="13" fill="var(--cyan)" rx="1" opacity="0.7"/><rect x="17" y="3" width="4" height="18" fill="var(--cyan)" rx="1"/></svg>
-                  <strong>Centipawn loss (ACPL)</strong>
-                </div>
-                <p>Average "points" lost per move compared to the best move. Lower means more accurate play.</p>
-              </div>
-              <div class="ms-item">
-                <div class="ms-head">
-                  <svg viewBox="0 0 24 24" class="ms-icon"><path d="M3 20L8 10L13 15L18 5L21 8" fill="none" stroke="var(--gold)" stroke-width="1.5"/></svg>
-                  <strong>Complexity slope</strong>
-                </div>
-                <p>Do they play better in complex positions than in simple ones? Humans usually do worse; engines don't care.</p>
-              </div>
-              <div class="ms-item">
-                <div class="ms-head">
-                  <svg viewBox="0 0 24 24" class="ms-icon"><path d="M12 3v12M7 10l5 5 5-5" fill="none" stroke="var(--red)" stroke-width="1.5"/><line x1="5" y1="20" x2="19" y2="20" stroke="var(--red)" stroke-width="1.5"/></svg>
-                  <strong>Blunder distribution</strong>
-                </div>
-                <p>The CPL tail test: cheaters have suspiciously few large mistakes compared to what's expected for their rating.</p>
-              </div>
-              <div class="ms-item">
-                <div class="ms-head">
-                  <svg viewBox="0 0 24 24" class="ms-icon"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--pink)" stroke-width="1.5"/><path d="M12 7v5l3 3" fill="none" stroke="var(--pink)" stroke-width="1.5"/></svg>
-                  <strong>Timing patterns</strong>
-                </div>
-                <p>Clock data reveals if thinking time correlates with move quality. Humans think longer on hard moves; bots don't.</p>
-              </div>
-              <div class="ms-item">
-                <div class="ms-head">
-                  <svg viewBox="0 0 24 24" class="ms-icon"><line x1="12" y1="3" x2="12" y2="21" stroke="var(--fg-3)" stroke-width="1" stroke-dasharray="2,2"/><circle cx="8" cy="8" r="3" fill="none" stroke="var(--emerald)" stroke-width="1.5"/><circle cx="16" cy="16" r="3" fill="none" stroke="var(--red)" stroke-width="1.5"/></svg>
-                  <strong>Switchpoint detection</strong>
-                </div>
-                <p>Did the player suddenly start playing much better mid-game? A statistical changepoint test finds where.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. THE BASELINE -->
-        <div class="method-block">
-          <div class="method-card">
-            <span class="method-tag">The Baseline</span>
-            <h3>Knowing what "normal" looks like</h3>
-            <p>The most critical piece: a reference model of how players at each rating level <em>actually play</em>. Without it, you can't tell if 55% engine match is suspicious or routine.</p>
-
-            <div class="method-baseline-viz">
-              <div class="mb-chart">
-                <div class="mb-title">Expected top-1 match rate by rating</div>
-                <svg viewBox="0 0 280 120" class="mb-svg">
-                  <!-- axes -->
-                  <line x1="40" y1="100" x2="270" y2="100" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
-                  <line x1="40" y1="10" x2="40" y2="100" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
-                  <!-- y labels -->
-                  <text x="36" y="103" font-size="7" fill="var(--fg-3)" text-anchor="end" font-family="var(--font-mono)">30%</text>
-                  <text x="36" y="55" font-size="7" fill="var(--fg-3)" text-anchor="end" font-family="var(--font-mono)">40%</text>
-                  <text x="36" y="15" font-size="7" fill="var(--fg-3)" text-anchor="end" font-family="var(--font-mono)">50%</text>
-                  <!-- x labels -->
-                  <text x="55" y="112" font-size="7" fill="var(--fg-3)" text-anchor="middle" font-family="var(--font-mono)">1000</text>
-                  <text x="120" y="112" font-size="7" fill="var(--fg-3)" text-anchor="middle" font-family="var(--font-mono)">1600</text>
-                  <text x="185" y="112" font-size="7" fill="var(--fg-3)" text-anchor="middle" font-family="var(--font-mono)">2200</text>
-                  <text x="250" y="112" font-size="7" fill="var(--fg-3)" text-anchor="middle" font-family="var(--font-mono)">2800</text>
-                  <!-- the curve: match rate rises with rating -->
-                  <path d="M55,95 C90,90 120,70 155,52 S210,25 250,15" fill="none" stroke="var(--cyan)" stroke-width="2">
-                    <animate attributeName="stroke-dashoffset" from="300" to="0" dur="2s" fill="freeze"/>
-                  </path>
-                  <!-- data points -->
-                  <circle cx="55" cy="95" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="0.5s" fill="freeze"/></circle>
-                  <circle cx="90" cy="85" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="0.8s" fill="freeze"/></circle>
-                  <circle cx="120" cy="70" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="1.1s" fill="freeze"/></circle>
-                  <circle cx="155" cy="52" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="1.4s" fill="freeze"/></circle>
-                  <circle cx="200" cy="30" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="1.7s" fill="freeze"/></circle>
-                  <circle cx="250" cy="15" r="3" fill="var(--cyan)" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="2.0s" fill="freeze"/></circle>
-                  <!-- annotation -->
-                  <text x="160" y="45" font-size="7" fill="var(--fg-3)" font-family="var(--font-body)">A GM matching 49%</text>
-                  <text x="160" y="53" font-size="7" fill="var(--fg-3)" font-family="var(--font-body)">is completely normal</text>
-                </svg>
-              </div>
-              <div class="mb-stats">
-                <div class="mb-stat">
-                  <div class="mb-num" id="corpus-games">3.4M</div>
-                  <div class="mb-label">games in corpus</div>
-                </div>
-                <div class="mb-stat">
-                  <div class="mb-num" id="corpus-positions">229M</div>
-                  <div class="mb-label">positions analysed</div>
-                </div>
-                <div class="mb-stat">
-                  <div class="mb-num" id="corpus-bands">12</div>
-                  <div class="mb-label">rating bands fitted</div>
-                </div>
-              </div>
-            </div>
-
-            <p>The corpus spans the full rating spectrum from beginner (&lt;800) through super-GM (2800+), split into 12 bands every 200 Elo. Each band gets its own fitted model so a 1200's "normal" isn't a 2400's "normal".</p>
-          </div>
-        </div>
-
-        <!-- 5. EVIDENCE IN ACTION -->
-        <div class="method-block">
-          <div class="method-card">
-            <span class="method-tag">Evidence in Action</span>
-            <h3>How a verdict builds up</h3>
-            <p>Each signal contributes its own evidence (positive for suspicious, negative for normal). These combine with correlation adjustments to prevent double-counting:</p>
-
-            <div class="method-waterfall">
-              <div class="mw-row"><span class="mw-name">Engine match</span><div class="mw-bar-wrap"><div class="mw-bar mw-pos" style="--w:65%">+8.2 dB</div></div></div>
-              <div class="mw-row"><span class="mw-name">ACPL</span><div class="mw-bar-wrap"><div class="mw-bar mw-pos" style="--w:45%">+5.6 dB</div></div></div>
-              <div class="mw-row"><span class="mw-name">Blunder rate</span><div class="mw-bar-wrap"><div class="mw-bar mw-pos" style="--w:30%">+3.8 dB</div></div></div>
-              <div class="mw-row"><span class="mw-name">Complexity slope</span><div class="mw-bar-wrap"><div class="mw-bar mw-neg" style="--w:20%">&minus;2.4 dB</div></div></div>
-              <div class="mw-row"><span class="mw-name">Timing pattern</span><div class="mw-bar-wrap"><div class="mw-bar mw-neg" style="--w:10%">&minus;1.2 dB</div></div></div>
-              <div class="mw-row mw-total"><span class="mw-name">Total</span><div class="mw-bar-wrap"><div class="mw-bar mw-pos" style="--w:55%">+14.0 dB</div></div></div>
-            </div>
-
-            <p>When scanning <strong>multiple games</strong>, evidence from each game simply adds to the running total. 20 clean games at &minus;8 dB each pile up to &minus;160 dB of exonerating evidence &mdash; even one suspicious game at +20 dB can't overcome that aggregate. But the system will still <strong>flag that individual game</strong> for closer review.</p>
-          </div>
-        </div>
-
-        <!-- 6. THE PIPELINE -->
-        <div class="method-block">
-          <div class="method-card">
-            <span class="method-tag">The Pipeline</span>
-            <h3>From PGN to verdict</h3>
-            <div class="method-pipeline">
-              <div class="mp-step">
-                <div class="mp-num">1</div>
-                <div class="mp-body">
-                  <strong>Ingest</strong>
-                  <p>Parse PGN, fetch from Chess.com or Lichess API, detect book moves via the Lichess opening explorer</p>
-                </div>
-              </div>
-              <div class="mp-arrow">&darr;</div>
-              <div class="mp-step">
-                <div class="mp-num">2</div>
-                <div class="mp-body">
-                  <strong>Engine analysis</strong>
-                  <p>Multi-pass Stockfish: depth 4 shallow scan, depth 12 main pass, depth 22 on critical positions</p>
-                </div>
-              </div>
-              <div class="mp-arrow">&darr;</div>
-              <div class="mp-step">
-                <div class="mp-num">3</div>
-                <div class="mp-body">
-                  <strong>Feature extraction</strong>
-                  <p>Per-move frame with match rank, CP loss, complexity, timing, game phase. Book and forced moves excluded.</p>
-                </div>
-              </div>
-              <div class="mp-arrow">&darr;</div>
-              <div class="mp-step">
-                <div class="mp-num">4</div>
-                <div class="mp-body">
-                  <strong>Signal computation</strong>
-                  <p>Fifteen signals extracted: z-scores against the rating-specific baseline for each signal independently</p>
-                </div>
-              </div>
-              <div class="mp-arrow">&darr;</div>
-              <div class="mp-step">
-                <div class="mp-num">5</div>
-                <div class="mp-body">
-                  <strong>Bayesian combination</strong>
-                  <p>Correlation-adjusted log-likelihood ratios summed into a total. Sensitivity band via 4,000 Monte Carlo draws.</p>
-                </div>
-              </div>
-              <div class="mp-arrow">&darr;</div>
-              <div class="mp-step">
-                <div class="mp-num">6</div>
-                <div class="mp-body">
-                  <strong>Verdict</strong>
-                  <p>Posterior probability with uncertainty bounds. For scans: per-game flags, convergence curve, changepoint detection.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 7. MODEL VALIDATION -->
-        <div class="method-block">
-          <div class="method-card">
-            <span class="method-tag">Validation</span>
-            <h3>Does it actually work?</h3>
-            <p>A model that hasn't been tested against reality is just a theory. We validated against <strong>known outcomes</strong> &mdash; games where we know the ground truth.</p>
-
-            <div class="method-validation-grid">
-              <div class="mv-category">
-                <h4>False positive control</h4>
-                <div class="mv-items">
-                  <div class="mv-item mv-good">
-                    <span class="mv-val">0%</span>
-                    <span class="mv-desc">false positive rate on 682,952 held-out test games at 50% threshold</span>
-                  </div>
-                  <div class="mv-item mv-good">
-                    <span class="mv-val">0.97%</span>
-                    <span class="mv-desc">false positive rate on 682,952 held-out test games at 5% threshold</span>
-                  </div>
-                  <div class="mv-item mv-good">
-                    <span class="mv-val">0%</span>
-                    <span class="mv-desc">false positive rate on 5,560 out-of-sample titled-player games (92 GM/IM/WGM)</span>
-                  </div>
-                  <div class="mv-item mv-good">
-                    <span class="mv-val">1.70%</span>
-                    <span class="mv-desc">Fischer&ndash;Spassky 1972 WCC Game 6 &mdash; one of the greatest games ever played</span>
-                  </div>
-                  <div class="mv-item mv-good">
-                    <span class="mv-val">0.28%</span>
-                    <span class="mv-desc">Kasparov&ndash;Topalov, Wijk aan Zee 1999 &mdash; "Kasparov's Immortal"</span>
-                  </div>
-                  <div class="mv-item mv-good">
-                    <span class="mv-val">&le;1.07%</span>
-                    <span class="mv-desc">Carlsen&ndash;Niemann, 2022 Sinquefield Cup R3 &mdash; both players well below any threshold</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mv-category">
-                <h4>Known cheater detection</h4>
-                <div class="mv-items">
-                  <div class="mv-item mv-flagged">
-                    <span class="mv-val">+55.6 dB</span>
-                    <span class="mv-desc">Borislav Ivanov, Zadar 2012 &mdash; 9 games, Bulgarian CF lifetime ban, FM title stripped</span>
-                  </div>
-                  <div class="mv-item mv-flagged">
-                    <span class="mv-val">+21.5 dB</span>
-                    <span class="mv-desc">Kirill Shevchenko, TCh-ESP 2024 &mdash; 3-year ban, GM title stripped</span>
-                  </div>
-                  <div class="mv-item mv-flagged">
-                    <span class="mv-val">+14.5 dB</span>
-                    <span class="mv-desc">S&eacute;bastien Feller, 2010 Olympiad &mdash; 9 games, partial SMS relay, FIDE 2y9m suspension</span>
-                  </div>
-                  <div class="mv-item mv-warn">
-                    <span class="mv-val">10/10</span>
-                    <span class="mv-desc">FIDE-sanctioned cheating cases produce positive aggregate evidence (+4.7 to +55.6 dB); 8/10 exceed +10 dB</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mv-category">
-                <h4>Detection power</h4>
-                <div class="mv-items">
-                  <div class="mv-item mv-stat">
-                    <span class="mv-val">2&ndash;4 games</span>
-                    <span class="mv-desc">typically suffice to cross the 50% posterior threshold at full engine assistance</span>
-                  </div>
-                  <div class="mv-item mv-stat">
-                    <span class="mv-val">4 rates</span>
-                    <span class="mv-desc">mixture model (10%, 25%, 50%, 100%) detects partial and intermittent engine use</span>
-                  </div>
-                  <div class="mv-item mv-stat">
-                    <span class="mv-val">141</span>
-                    <span class="mv-desc">automated tests pass &mdash; covering calibration, detection, and false positives</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <p style="margin-top:16px">All ten FIDE-sanctioned cheating cases produce positive cumulative evidence; eight exceed +10 dB. The hardest case is <strong>partial cheating by strong players</strong>: Feller (GM, 2649) used intermittent SMS relay &mdash; per-game signals are individually weak, but the per-player mixture model charges the model-selection penalty only once and accumulates evidence across 9 games into +14.5 dB (detected). Training and evaluation data are strictly separated: calibration uses one corpus partition, validation uses the held-out set plus 5,560 out-of-sample titled-player games.</p>
-          </div>
-        </div>
-
-        <!-- 8. TRY IT / GITHUB -->
-        <div class="method-block">
-          <div class="method-card" style="text-align:center">
-            <h3>Open source &mdash; inspect everything</h3>
-            <p style="max-width:500px;margin:0 auto 24px">Every line of analysis code is public. The baseline corpus, the fitted model, the signal weights &mdash; nothing is hidden. Fork it, improve it, challenge it.</p>
-            <div class="method-cta-row">
-              <button class="btn-cosmic" id="method-cta" style="width:auto;padding:14px 40px">Try it now</button>
-              <a href="https://github.com/mlab-1/ChessForensics" target="_blank" rel="noopener" class="btn-ghost hero-scroll" id="github-link">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right:8px;vertical-align:middle"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                View on GitHub
-              </a>
-            </div>
-            <p style="margin-top:20px;font-size:13px;color:var(--fg-3)">
-              Based on the research of Prof. Kenneth Regan (University at Buffalo), who pioneered statistical cheat detection in chess.
-              <br>See the <a href="#cases-section" style="color:var(--cyan)">documented cases</a> for validated examples.
-            </p>
-          </div>
-        </div>
-
       </div>
 
       <!-- FOOTER -->
       <footer class="landing-footer">
         <div class="footer-inner">
-          <span class="logo-sm">CHESS FORENSICS</span>
+          <span class="logo-sm">CHESS <strong>FORENSICS</strong></span>
           <p>Open-source Bayesian cheat detection. Built with Stockfish, Python, and honest statistics.</p>
-          <a href="https://github.com/mlab-1/ChessForensics" target="_blank" rel="noopener" style="color:var(--cyan);font-size:13px;text-decoration:none" id="github-link-footer">GitHub</a>
+          <a href="https://github.com/mlab-1/ChessForensics" target="_blank" rel="noopener" style="color:var(--fg-2);font-size:13px;text-decoration:none" id="github-link-footer">GitHub</a>
+          <p class="footer-copyright">&copy; 2026 Alberto Mirandola. All rights reserved.</p>
         </div>
       </footer>
 
@@ -576,6 +264,621 @@
 
 </div>
 
-<script type="module" src="/static/app.js"></script>
+<!-- ============================================================ -->
+<!-- GSAP + Interactive Analysis Engine                            -->
+<!-- ============================================================ -->
+<script>
+
+// ── Multiple games for auto-play rotation ──
+// Real games from V1 corpus (cache/chesscom_pgns/). FENs from python-chess.
+// Moves with rank/pm/gap/cmplx are the suspect's moves (scored).
+// Moves without those fields are the opponent's moves (unscored).
+const IX_GAMES = [
+  // Game 1: Ruy Lopez Opening Berlin Rio -- vladislavkovalev vs 123lt (flagged, 2400-2600)
+  { name:"Ruy Lopez Opening Berlin Rio -- vladislavkovalev vs 123lt", band:"2400-2600", suspect:true, suspectColor:"black", moves:[
+    {label:"1. e4",fen:"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR",eval:"+0.55"},
+    {label:"1... e5",fen:"rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR",eval:"+0.31",rank:1,cpl:0,pm:0.84,gap:88,cmplx:2.4},
+    {label:"2. Nf3",fen:"rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R",eval:"+0.59"},
+    {label:"2... Nc6",fen:"r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R",eval:"+0.39",rank:1,cpl:0,pm:0.66,gap:73,cmplx:1.0},
+    {label:"3. Bb5",fen:"r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R",eval:"+0.62"},
+    {label:"3... Nf6",fen:"r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R",eval:"+0.38",rank:1,cpl:0,pm:0.54,gap:24,cmplx:3.4},
+    {label:"4. O-O",fen:"r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQ1RK1",eval:"+0.52"},
+    {label:"4... Nxe4",fen:"r1bqkb1r/pppp1ppp/2n5/1B2p3/4n3/5N2/PPPP1PPP/RNBQ1RK1",eval:"+0.19",rank:1,cpl:0,pm:0.64,gap:81,cmplx:2.3},
+    {label:"5. Re1",fen:"r1bqkb1r/pppp1ppp/2n5/1B2p3/4n3/5N2/PPPP1PPP/RNBQR1K1",eval:"+0.36"},
+    {label:"5... Nd6",fen:"r1bqkb1r/pppp1ppp/2nn4/1B2p3/8/5N2/PPPP1PPP/RNBQR1K1",eval:"+0.82",rank:1,cpl:0,pm:0.9,gap:122,cmplx:1.3},
+    {label:"6. Nxe5",fen:"r1bqkb1r/pppp1ppp/2nn4/1B2N3/8/8/PPPP1PPP/RNBQR1K1",eval:"+1.79"},
+    {label:"6... Be7",fen:"r1bqk2r/ppppbppp/2nn4/1B2N3/8/8/PPPP1PPP/RNBQR1K1",eval:"+0.56",rank:1,cpl:0,pm:0.52,gap:27,cmplx:2.8},
+    {label:"7. Bf1",fen:"r1bqk2r/ppppbppp/2nn4/4N3/8/8/PPPP1PPP/RNBQRBK1",eval:"+0.44"},
+    {label:"7... Nxe5",fen:"r1bqk2r/ppppbppp/3n4/4n3/8/8/PPPP1PPP/RNBQRBK1",eval:"+0.35",rank:1,cpl:0,pm:0.63,gap:108,cmplx:1.3},
+    {label:"8. Rxe5",fen:"r1bqk2r/ppppbppp/3n4/4R3/8/8/PPPP1PPP/RNBQ1BK1",eval:"+1.28"},
+    {label:"8... O-O",fen:"r1bq1rk1/ppppbppp/3n4/4R3/8/8/PPPP1PPP/RNBQ1BK1",eval:"+0.69",rank:1,cpl:0,pm:0.3,gap:7,cmplx:4.3},
+    {label:"9. d4",fen:"r1bq1rk1/ppppbppp/3n4/4R3/3P4/8/PPP2PPP/RNBQ1BK1",eval:"+0.52"},
+    {label:"9... Bf6",fen:"r1bq1rk1/pppp1ppp/3n1b2/4R3/3P4/8/PPP2PPP/RNBQ1BK1",eval:"+0.17",rank:1,cpl:0,pm:0.44,gap:4,cmplx:4.6},
+    {label:"10. Re1",fen:"r1bq1rk1/pppp1ppp/3n1b2/8/3P4/8/PPP2PPP/RNBQRBK1",eval:"+0.36"},
+    {label:"10... Re8",fen:"r1bqr1k1/pppp1ppp/3n1b2/8/3P4/8/PPP2PPP/RNBQRBK1",eval:"+0.32",rank:1,cpl:0,pm:0.19,gap:3,cmplx:5.6},
+    {label:"11. c3",fen:"r1bqr1k1/pppp1ppp/3n1b2/8/3P4/2P5/PP3PPP/RNBQRBK1",eval:"+0.44"},
+    {label:"11... Rxe1",fen:"r1bq2k1/pppp1ppp/3n1b2/8/3P4/2P5/PP3PPP/RNBQrBK1",eval:"+0.30",rank:1,cpl:0,pm:0.21,gap:8,cmplx:5.6},
+    {label:"12. Qxe1",fen:"r1bq2k1/pppp1ppp/3n1b2/8/3P4/2P5/PP3PPP/RNB1QBK1",eval:"+0.15"},
+    {label:"12... Ne8",fen:"r1bqn1k1/pppp1ppp/5b2/8/3P4/2P5/PP3PPP/RNB1QBK1",eval:"+0.09",rank:4,cpl:33,pm:0.48,gap:6,cmplx:4.5},
+    {label:"13. a4",fen:"r1bqn1k1/pppp1ppp/5b2/8/P2P4/2P5/1P3PPP/RNB1QBK1",eval:"+0.46"},
+    {label:"13... d5",fen:"r1bqn1k1/ppp2ppp/5b2/3p4/P2P4/2P5/1P3PPP/RNB1QBK1",eval:"+0.16",rank:2,cpl:13,pm:0.25,gap:1,cmplx:6.1},
+    {label:"14. a5",fen:"r1bqn1k1/ppp2ppp/5b2/P2p4/3P4/2P5/1P3PPP/RNB1QBK1",eval:"+0.21"},
+    {label:"14... a6",fen:"r1bqn1k1/1pp2ppp/p4b2/P2p4/3P4/2P5/1P3PPP/RNB1QBK1",eval:"+0.13",rank:3,cpl:7,pm:0.2,gap:6,cmplx:5.8},
+    {label:"15. Bf4",fen:"r1bqn1k1/1pp2ppp/p4b2/P2p4/3P1B2/2P5/1P3PPP/RN2QBK1",eval:"+0.13"},
+    {label:"15... Bf5",fen:"r2qn1k1/1pp2ppp/p4b2/P2p1b2/3P1B2/2P5/1P3PPP/RN2QBK1",eval:"+0.13",rank:1,cpl:0,pm:0.33,gap:7,cmplx:4.9},
+    {label:"16. Nd2",fen:"r2qn1k1/1pp2ppp/p4b2/P2p1b2/3P1B2/2P5/1P1N1PPP/R3QBK1",eval:"+0.13"},
+    {label:"16... g6",fen:"r2qn1k1/1pp2p1p/p4bp1/P2p1b2/3P1B2/2P5/1P1N1PPP/R3QBK1",eval:"+0.13",rank:1,cpl:0,pm:0.3,gap:3,cmplx:6.0},
+    {label:"17. Nb3",fen:"r2qn1k1/1pp2p1p/p4bp1/P2p1b2/3P1B2/1NP5/1P3PPP/R3QBK1",eval:"+0.13"},
+    {label:"17... Nd6",fen:"r2q2k1/1pp2p1p/p2n1bp1/P2p1b2/3P1B2/1NP5/1P3PPP/R3QBK1",eval:"+0.13",rank:1,cpl:0,pm:0.34,gap:5,cmplx:5.3},
+    {label:"18. Nc5",fen:"r2q2k1/1pp2p1p/p2n1bp1/P1Np1b2/3P1B2/2P5/1P3PPP/R3QBK1",eval:"+0.13"},
+    {label:"18... Rb8",fen:"1r1q2k1/1pp2p1p/p2n1bp1/P1Np1b2/3P1B2/2P5/1P3PPP/R3QBK1",eval:"+0.13",rank:3,cpl:47,pm:0.15,gap:5,cmplx:4.6},
+    {label:"19. Ra4",fen:"1r1q2k1/1pp2p1p/p2n1bp1/P1Np1b2/R2P1B2/2P5/1P3PPP/4QBK1",eval:"+0.13"},
+    {label:"19... Ne4",fen:"1r1q2k1/1pp2p1p/p4bp1/P1Np1b2/R2PnB2/2P5/1P3PPP/4QBK1",eval:"+0.13",rank:1,cpl:0,pm:0.25,gap:4,cmplx:4.6},
+    {label:"20. Nd3",fen:"1r1q2k1/1pp2p1p/p4bp1/P2p1b2/R2PnB2/2PN4/1P3PPP/4QBK1",eval:"+0.13"},
+    {label:"20... Bd7",fen:"1r1q2k1/1ppb1p1p/p4bp1/P2p4/R2PnB2/2PN4/1P3PPP/4QBK1",eval:"+0.13",rank:1,cpl:0,pm:0.47,gap:7,cmplx:4.8},
+    {label:"21. Ra3",fen:"1r1q2k1/1ppb1p1p/p4bp1/P2p4/3PnB2/R1PN4/1P3PPP/4QBK1",eval:"+0.13"},
+    {label:"21... Bb5",fen:"1r1q2k1/1pp2p1p/p4bp1/Pb1p4/3PnB2/R1PN4/1P3PPP/4QBK1",eval:"+0.13",rank:2,cpl:22,pm:0.34,gap:4,cmplx:5.9},
+    {label:"22. f3",fen:"1r1q2k1/1pp2p1p/p4bp1/Pb1p4/3PnB2/R1PN1P2/1P4PP/4QBK1",eval:"+0.13"},
+    {label:"22... Bxd3",fen:"1r1q2k1/1pp2p1p/p4bp1/P2p4/3PnB2/R1Pb1P2/1P4PP/4QBK1",eval:"+0.13",rank:1,cpl:0,pm:0.5,gap:9,cmplx:3.9},
+    {label:"23. Bxd3",fen:"1r1q2k1/1pp2p1p/p4bp1/P2p4/3PnB2/R1PB1P2/1P4PP/4Q1K1",eval:"+0.13"},
+    {label:"23... Nd6",fen:"1r1q2k1/1pp2p1p/p2n1bp1/P2p4/3P1B2/R1PB1P2/1P4PP/4Q1K1",eval:"+0.13",rank:1,cpl:0,pm:0.32,gap:1,cmplx:5.3},
+    {label:"24. Rb3",fen:"1r1q2k1/1pp2p1p/p2n1bp1/P2p4/3P1B2/1RPB1P2/1P4PP/4Q1K1",eval:"+0.13"},
+    {label:"24... Qd7",fen:"1r4k1/1ppq1p1p/p2n1bp1/P2p4/3P1B2/1RPB1P2/1P4PP/4Q1K1",eval:"+0.13",rank:1,cpl:0,pm:0.28,gap:2,cmplx:7.2},
+    {label:"25. Bxa6",fen:"1r4k1/1ppq1p1p/B2n1bp1/P2p4/3P1B2/1RP2P2/1P4PP/4Q1K1",eval:"+0.13"},
+    {label:"25... Ra8",fen:"r5k1/1ppq1p1p/B2n1bp1/P2p4/3P1B2/1RP2P2/1P4PP/4Q1K1",eval:"+0.13",rank:1,cpl:0,pm:0.33,gap:1,cmplx:7.1},
+    {label:"26. Bxb7",fen:"r5k1/1Bpq1p1p/3n1bp1/P2p4/3P1B2/1RP2P2/1P4PP/4Q1K1",eval:"+0.13"},
+    {label:"26... Rxa5",fen:"6k1/1Bpq1p1p/3n1bp1/r2p4/3P1B2/1RP2P2/1P4PP/4Q1K1",eval:"+0.13",rank:1,cpl:0,pm:0.31,gap:1,cmplx:5.1},
+    {label:"27. Bh6",fen:"6k1/1Bpq1p1p/3n1bpB/r2p4/3P4/1RP2P2/1P4PP/4Q1K1",eval:"+0.13"},
+    {label:"27... Rb5",fen:"6k1/1Bpq1p1p/3n1bpB/1r1p4/3P4/1RP2P2/1P4PP/4Q1K1",eval:"+0.13",rank:1,cpl:0,pm:0.34,gap:11,cmplx:4.8},
+    {label:"28. Bxd5",fen:"6k1/2pq1p1p/3n1bpB/1r1B4/3P4/1RP2P2/1P4PP/4Q1K1",eval:"+0.13"},
+    {label:"28... Rxd5",fen:"6k1/2pq1p1p/3n1bpB/3r4/3P4/1RP2P2/1P4PP/4Q1K1",eval:"+0.13",rank:1,cpl:0,pm:0.28,gap:3,cmplx:4.9},
+    {label:"29. Rb8+",fen:"1R4k1/2pq1p1p/3n1bpB/3r4/3P4/2P2P2/1P4PP/4Q1K1",eval:"+0.13"},
+    {label:"29... Nc8",fen:"1Rn3k1/2pq1p1p/5bpB/3r4/3P4/2P2P2/1P4PP/4Q1K1",eval:"+0.13",rank:1,cpl:0,pm:0.71,gap:93,cmplx:2.4},
+    {label:"30. Qe4",fen:"1Rn3k1/2pq1p1p/5bpB/3r4/3PQ3/2P2P2/1P4PP/6K1",eval:"+0.13"},
+    {label:"30... c6",fen:"1Rn3k1/3q1p1p/2p2bpB/3r4/3PQ3/2P2P2/1P4PP/6K1",eval:"+0.13",rank:1,cpl:0,pm:0.66,gap:16,cmplx:2.9},
+    {label:"31. Rb7",fen:"2n3k1/1R1q1p1p/2p2bpB/3r4/3PQ3/2P2P2/1P4PP/6K1",eval:"+0.13"},
+    {label:"31... Qe6",fen:"2n3k1/1R3p1p/2p1qbpB/3r4/3PQ3/2P2P2/1P4PP/6K1",eval:"+0.13",rank:1,cpl:0,pm:0.42,gap:41,cmplx:3.8},
+    {label:"32. Rc7",fen:"2n3k1/2R2p1p/2p1qbpB/3r4/3PQ3/2P2P2/1P4PP/6K1",eval:"+0.13"},
+    {label:"32... Ne7",fen:"6k1/2R1np1p/2p1qbpB/3r4/3PQ3/2P2P2/1P4PP/6K1",eval:"+0.13",rank:1,cpl:0,pm:0.56,gap:13,cmplx:3.2},
+    {label:"33. b4",fen:"6k1/2R1np1p/2p1qbpB/3r4/1P1PQ3/2P2P2/6PP/6K1",eval:"+0.13"},
+    {label:"33... Rd8",fen:"3r2k1/2R1np1p/2p1qbpB/8/1P1PQ3/2P2P2/6PP/6K1",eval:"+0.13",rank:1,cpl:0,pm:0.68,gap:88,cmplx:1.8},
+    {label:"34. Qxe6",fen:"3r2k1/2R1np1p/2p1QbpB/8/1P1P4/2P2P2/6PP/6K1",eval:"+0.13"},
+    {label:"34... fxe6",fen:"3r2k1/2R1n2p/2p1pbpB/8/1P1P4/2P2P2/6PP/6K1",eval:"+0.13",rank:1,cpl:0,pm:0.46,gap:24,cmplx:2.5},
+    {label:"35. Kf2",fen:"3r2k1/2R1n2p/2p1pbpB/8/1P1P4/2P2P2/5KPP/8",eval:"+0.13"},
+    {label:"35... g5",fen:"3r2k1/2R1n2p/2p1pb1B/6p1/1P1P4/2P2P2/5KPP/8",eval:"+0.13",rank:1,cpl:0,pm:0.33,gap:19,cmplx:4.0},
+    {label:"36. h4",fen:"3r2k1/2R1n2p/2p1pb1B/6p1/1P1P3P/2P2P2/5KP1/8",eval:"+0.13"},
+    {label:"36... gxh4",fen:"3r2k1/2R1n2p/2p1pb1B/8/1P1P3p/2P2P2/5KP1/8",eval:"+0.13",rank:2,cpl:13,pm:0.3,gap:26,cmplx:3.5},
+    {label:"37. Be3",fen:"3r2k1/2R1n2p/2p1pb2/8/1P1P3p/2P1BP2/5KP1/8",eval:"+0.13"},
+    {label:"37... Ra8",fen:"r5k1/2R1n2p/2p1pb2/8/1P1P3p/2P1BP2/5KP1/8",eval:"+0.13",rank:1,cpl:0,pm:0.17,gap:7,cmplx:5.8},
+    {label:"38. c4",fen:"r5k1/2R1n2p/2p1pb2/8/1PPP3p/4BP2/5KP1/8",eval:"+0.13"},
+    {label:"38... Ra2+",fen:"6k1/2R1n2p/2p1pb2/8/1PPP3p/4BP2/r4KP1/8",eval:"+0.13",rank:1,cpl:0,pm:0.36,gap:11,cmplx:4.7},
+    {label:"39. Kg1",fen:"6k1/2R1n2p/2p1pb2/8/1PPP3p/4BP2/r5P1/6K1",eval:"+0.13"},
+    {label:"39... Nf5",fen:"6k1/2R4p/2p1pb2/5n2/1PPP3p/4BP2/r5P1/6K1",eval:"+0.13",rank:1,cpl:0,pm:0.5,gap:22,cmplx:3.0},
+    {label:"40. Bf4",fen:"6k1/2R4p/2p1pb2/5n2/1PPP1B1p/5P2/r5P1/6K1",eval:"+0.13"},
+    {label:"40... h3",fen:"6k1/2R4p/2p1pb2/5n2/1PPP1B2/5P1p/r5P1/6K1",eval:"+0.13",rank:3,cpl:2,pm:0.57,gap:18,cmplx:3.9},
+    {label:"41. gxh3",fen:"6k1/2R4p/2p1pb2/5n2/1PPP1B2/5P1P/r7/6K1",eval:"+0.13"},
+    {label:"41... Nxd4",fen:"6k1/2R4p/2p1pb2/8/1PPn1B2/5P1P/r7/6K1",eval:"+0.13",rank:4,cpl:63,pm:0.71,gap:63,cmplx:2.0},
+    {label:"42. Bd6",fen:"6k1/2R4p/2pBpb2/8/1PPn4/5P1P/r7/6K1",eval:"+0.13"},
+    {label:"42... Nxf3+",fen:"6k1/2R4p/2pBpb2/8/1PP5/5n1P/r7/6K1",eval:"+0.13",rank:3,cpl:28,pm:0.71,gap:32,cmplx:2.9},
+    {label:"43. Kf1",fen:"6k1/2R4p/2pBpb2/8/1PP5/5n1P/r7/5K2",eval:"+0.13"},
+    {label:"43... Nd2+",fen:"6k1/2R4p/2pBpb2/8/1PP5/7P/r2n4/5K2",eval:"+0.13",rank:2,cpl:6,pm:0.28,gap:5,cmplx:4.1},
+    {label:"44. Ke1",fen:"6k1/2R4p/2pBpb2/8/1PP5/7P/r2n4/4K3",eval:"+0.13"},
+    {label:"44... Bh4+",fen:"6k1/2R4p/2pBp3/8/1PP4b/7P/r2n4/4K3",eval:"+0.13",rank:1,cpl:0,pm:0.32,gap:1,cmplx:4.9},
+    {label:"45. Kd1",fen:"6k1/2R4p/2pBp3/8/1PP4b/7P/r2n4/3K4",eval:"+0.13"},
+    {label:"45... Nxc4",fen:"6k1/2R4p/2pBp3/8/1Pn4b/7P/r7/3K4",eval:"+0.13",rank:1,cpl:0,pm:0.37,gap:6,cmplx:4.1},
+    {label:"46. Bc5",fen:"6k1/2R4p/2p1p3/2B5/1Pn4b/7P/r7/3K4",eval:"+0.13"},
+    {label:"46... Rd2+",fen:"6k1/2R4p/2p1p3/2B5/1Pn4b/7P/3r4/3K4",eval:"+0.13",rank:1,cpl:0,pm:0.56,gap:16,cmplx:2.8},
+    {label:"47. Kc1",fen:"6k1/2R4p/2p1p3/2B5/1Pn4b/7P/3r4/2K5",eval:"+0.13"},
+    {label:"47... Bg5",fen:"6k1/2R4p/2p1p3/2B3b1/1Pn5/7P/3r4/2K5",eval:"+0.13",rank:1,cpl:0,pm:0.32,gap:1,cmplx:5.0},
+    {label:"48. Kb1",fen:"6k1/2R4p/2p1p3/2B3b1/1Pn5/7P/3r4/1K6",eval:"+0.13"},
+    {label:"48... Na3+",fen:"6k1/2R4p/2p1p3/2B3b1/1P6/n6P/3r4/1K6",eval:"+0.13",rank:1,cpl:0,pm:0.63,gap:17,cmplx:3.5}
+  ]},
+  // Game 2: Sicilian Defense Smith Morra -- KamberSheshi vs vimleshsingh (clean, 2200-2400)
+  { name:"Sicilian Defense Smith Morra -- KamberSheshi vs vimleshsingh", band:"2200-2400", suspect:false, suspectColor:"white", moves:[
+    {label:"1. e4",fen:"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR",eval:"+0.55",rank:1,cpl:0,pm:0.84,gap:111,cmplx:1.4},
+    {label:"1... c5",fen:"rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR",eval:"+0.31"},
+    {label:"2. d4",fen:"rnbqkbnr/pp1ppppp/8/2p5/3PP3/8/PPP2PPP/RNBQKBNR",eval:"+0.49",rank:4,cpl:40,pm:0.64,gap:77,cmplx:1.4},
+    {label:"2... cxd4",fen:"rnbqkbnr/pp1ppppp/8/8/3pP3/8/PPP2PPP/RNBQKBNR",eval:"+0.38"},
+    {label:"3. Nf3",fen:"rnbqkbnr/pp1ppppp/8/8/3pP3/5N2/PPP2PPP/RNBQKB1R",eval:"+0.35",rank:2,cpl:16,pm:0.77,gap:23,cmplx:2.8},
+    {label:"3... e5",fen:"rnbqkbnr/pp1p1ppp/8/4p3/3pP3/5N2/PPP2PPP/RNBQKB1R",eval:"+0.02"},
+    {label:"4. Bc4",fen:"rnbqkbnr/pp1p1ppp/8/4p3/2BpP3/5N2/PPP2PPP/RNBQK2R",eval:"+0.21",rank:1,cpl:0,pm:0.58,gap:64,cmplx:1.7},
+    {label:"4... Nc6",fen:"r1bqkbnr/pp1p1ppp/2n5/4p3/2BpP3/5N2/PPP2PPP/RNBQK2R",eval:"-0.01"},
+    {label:"5. a3",fen:"r1bqkbnr/pp1p1ppp/2n5/4p3/2BpP3/P4N2/1PP2PPP/RNBQK2R",eval:"+0.04",rank:2,cpl:22,pm:0.72,gap:28,cmplx:2.6},
+    {label:"5... Be7",fen:"r1bqk1nr/pp1pbppp/2n5/4p3/2BpP3/P4N2/1PP2PPP/RNBQK2R",eval:"+0.04"},
+    {label:"6. b4",fen:"r1bqk1nr/pp1pbppp/2n5/4p3/1PBpP3/P4N2/2P2PPP/RNBQK2R",eval:"+0.04",rank:2,cpl:9,pm:0.53,gap:129,cmplx:2.4},
+    {label:"6... a6",fen:"r1bqk1nr/1p1pbppp/p1n5/4p3/1PBpP3/P4N2/2P2PPP/RNBQK2R",eval:"+0.04"},
+    {label:"7. O-O",fen:"r1bqk1nr/1p1pbppp/p1n5/4p3/1PBpP3/P4N2/2P2PPP/RNBQ1RK1",eval:"+0.04",rank:3,cpl:28,pm:0.35,gap:1,cmplx:3.3},
+    {label:"7... Nf6",fen:"r1bqk2r/1p1pbppp/p1n2n2/4p3/1PBpP3/P4N2/2P2PPP/RNBQ1RK1",eval:"+0.04"},
+    {label:"8. Bd5",fen:"r1bqk2r/1p1pbppp/p1n2n2/3Bp3/1P1pP3/P4N2/2P2PPP/RNBQ1RK1",eval:"+0.04",rank:1,cpl:0,pm:0.54,gap:9,cmplx:3.6},
+    {label:"8... Qc7",fen:"r1b1k2r/1pqpbppp/p1n2n2/3Bp3/1P1pP3/P4N2/2P2PPP/RNBQ1RK1",eval:"+0.04"},
+    {label:"9. c4",fen:"r1b1k2r/1pqpbppp/p1n2n2/3Bp3/1PPpP3/P4N2/5PPP/RNBQ1RK1",eval:"+0.04",rank:1,cpl:0,pm:0.28,gap:6,cmplx:5.0},
+    {label:"9... O-O",fen:"r1b2rk1/1pqpbppp/p1n2n2/3Bp3/1PPpP3/P4N2/5PPP/RNBQ1RK1",eval:"+0.04"},
+    {label:"10. Bg5",fen:"r1b2rk1/1pqpbppp/p1n2n2/3Bp1B1/1PPpP3/P4N2/5PPP/RN1Q1RK1",eval:"+0.04",rank:4,cpl:32,pm:0.58,gap:3,cmplx:4.5},
+    {label:"10... d6",fen:"r1b2rk1/1pq1bppp/p1np1n2/3Bp1B1/1PPpP3/P4N2/5PPP/RN1Q1RK1",eval:"+0.04"},
+    {label:"11. Nbd2",fen:"r1b2rk1/1pq1bppp/p1np1n2/3Bp1B1/1PPpP3/P4N2/3N1PPP/R2Q1RK1",eval:"+0.04",rank:1,cpl:0,pm:0.54,gap:19,cmplx:2.7},
+    {label:"11... Bg4",fen:"r4rk1/1pq1bppp/p1np1n2/3Bp1B1/1PPpP1b1/P4N2/3N1PPP/R2Q1RK1",eval:"+0.04"},
+    {label:"12. h3",fen:"r4rk1/1pq1bppp/p1np1n2/3Bp1B1/1PPpP1b1/P4N1P/3N1PP1/R2Q1RK1",eval:"+0.04",rank:4,cpl:81,pm:0.33,gap:5,cmplx:4.1},
+    {label:"12... Bh5",fen:"r4rk1/1pq1bppp/p1np1n2/3Bp1Bb/1PPpP3/P4N1P/3N1PP1/R2Q1RK1",eval:"+0.04"},
+    {label:"13. g4",fen:"r4rk1/1pq1bppp/p1np1n2/3Bp1Bb/1PPpP1P1/P4N1P/3N1P2/R2Q1RK1",eval:"+0.04",rank:4,cpl:54,pm:0.18,gap:10,cmplx:5.4},
+    {label:"13... Bg6",fen:"r4rk1/1pq1bppp/p1np1nb1/3Bp1B1/1PPpP1P1/P4N1P/3N1P2/R2Q1RK1",eval:"+0.04"},
+    {label:"14. Nh4",fen:"r4rk1/1pq1bppp/p1np1nb1/3Bp1B1/1PPpP1PN/P6P/3N1P2/R2Q1RK1",eval:"+0.04",rank:1,cpl:0,pm:0.39,gap:2,cmplx:5.3},
+    {label:"14... Nxd5",fen:"r4rk1/1pq1bppp/p1np2b1/3np1B1/1PPpP1PN/P6P/3N1P2/R2Q1RK1",eval:"+0.04"},
+    {label:"15. Nxg6",fen:"r4rk1/1pq1bppp/p1np2N1/3np1B1/1PPpP1P1/P6P/3N1P2/R2Q1RK1",eval:"+0.04",rank:3,cpl:29,pm:0.57,gap:1,cmplx:4.8},
+    {label:"15... Bxg5",fen:"r4rk1/1pq2ppp/p1np2N1/3np1b1/1PPpP1P1/P6P/3N1P2/R2Q1RK1",eval:"+0.04"},
+    {label:"16. Nxf8",fen:"r4Nk1/1pq2ppp/p1np4/3np1b1/1PPpP1P1/P6P/3N1P2/R2Q1RK1",eval:"+0.04",rank:3,cpl:29,pm:0.25,gap:11,cmplx:6.3},
+    {label:"16... Nc3",fen:"r4Nk1/1pq2ppp/p1np4/4p1b1/1PPpP1P1/P1n4P/3N1P2/R2Q1RK1",eval:"+0.04"},
+    {label:"17. Qc2",fen:"r4Nk1/1pq2ppp/p1np4/4p1b1/1PPpP1P1/P1n4P/2QN1P2/R4RK1",eval:"+0.04",rank:3,cpl:24,pm:0.39,gap:10,cmplx:4.0},
+    {label:"17... Rxf8",fen:"5rk1/1pq2ppp/p1np4/4p1b1/1PPpP1P1/P1n4P/2QN1P2/R4RK1",eval:"+0.04"},
+    {label:"18. f4",fen:"5rk1/1pq2ppp/p1np4/4p1b1/1PPpPPP1/P1n4P/2QN4/R4RK1",eval:"+0.04",rank:1,cpl:0,pm:0.22,gap:3,cmplx:6.3},
+    {label:"18... Bxf4",fen:"5rk1/1pq2ppp/p1np4/4p3/1PPpPbP1/P1n4P/2QN4/R4RK1",eval:"+0.04"},
+    {label:"19. Nf3",fen:"5rk1/1pq2ppp/p1np4/4p3/1PPpPbP1/P1n2N1P/2Q5/R4RK1",eval:"+0.04",rank:2,cpl:7,pm:0.35,gap:5,cmplx:4.7},
+    {label:"19... Qe7",fen:"5rk1/1p2qppp/p1np4/4p3/1PPpPbP1/P1n2N1P/2Q5/R4RK1",eval:"+0.04"},
+    {label:"20. b5",fen:"5rk1/1p2qppp/p1np4/1P2p3/2PpPbP1/P1n2N1P/2Q5/R4RK1",eval:"+0.04",rank:1,cpl:0,pm:0.5,gap:16,cmplx:3.4},
+    {label:"20... axb5",fen:"5rk1/1p2qppp/2np4/1p2p3/2PpPbP1/P1n2N1P/2Q5/R4RK1",eval:"+0.04"},
+    {label:"21. cxb5",fen:"5rk1/1p2qppp/2np4/1P2p3/3pPbP1/P1n2N1P/2Q5/R4RK1",eval:"+0.04",rank:1,cpl:0,pm:0.34,gap:1,cmplx:5.6},
+    {label:"21... Nxb5",fen:"5rk1/1p2qppp/2np4/1n2p3/3pPbP1/P4N1P/2Q5/R4RK1",eval:"+0.04"},
+    {label:"22. a4",fen:"5rk1/1p2qppp/2np4/1n2p3/P2pPbP1/5N1P/2Q5/R4RK1",eval:"+0.04",rank:2,cpl:10,pm:0.79,gap:16,cmplx:2.7},
+    {label:"22... Nc3",fen:"5rk1/1p2qppp/2np4/4p3/P2pPbP1/2n2N1P/2Q5/R4RK1",eval:"+0.04"},
+    {label:"23. Nxd4",fen:"5rk1/1p2qppp/2np4/4p3/P2NPbP1/2n4P/2Q5/R4RK1",eval:"+0.04",rank:3,cpl:27,pm:0.34,gap:2,cmplx:4.2},
+    {label:"23... Nxd4",fen:"5rk1/1p2qppp/3p4/4p3/P2nPbP1/2n4P/2Q5/R4RK1",eval:"+0.04"},
+    {label:"24. Qd3",fen:"5rk1/1p2qppp/3p4/4p3/P2nPbP1/2nQ3P/8/R4RK1",eval:"+0.04",rank:1,cpl:0,pm:0.46,gap:30,cmplx:3.8},
+    {label:"24... Qh4",fen:"5rk1/1p3ppp/3p4/4p3/P2nPbPq/2nQ3P/8/R4RK1",eval:"+0.04"},
+    {label:"25. Kg2",fen:"5rk1/1p3ppp/3p4/4p3/P2nPbPq/2nQ3P/6K1/R4R2",eval:"+0.04",rank:2,cpl:12,pm:0.25,gap:5,cmplx:4.2},
+    {label:"25... Nce2",fen:"5rk1/1p3ppp/3p4/4p3/P2nPbPq/3Q3P/4n1K1/R4R2",eval:"+0.04"},
+    {label:"26. Rae1",fen:"5rk1/1p3ppp/3p4/4p3/P2nPbPq/3Q3P/4n1K1/4RR2",eval:"+0.04",rank:1,cpl:0,pm:0.76,gap:23,cmplx:2.7},
+    {label:"26... Ng3",fen:"5rk1/1p3ppp/3p4/4p3/P2nPbPq/3Q2nP/6K1/4RR2",eval:"+0.04"},
+    {label:"27. Rxf4",fen:"5rk1/1p3ppp/3p4/4p3/P2nPRPq/3Q2nP/6K1/4R3",eval:"+0.04",rank:3,cpl:25,pm:0.19,gap:9,cmplx:5.6},
+    {label:"27... exf4",fen:"5rk1/1p3ppp/3p4/8/P2nPpPq/3Q2nP/6K1/4R3",eval:"+0.04"},
+    {label:"28. Qxd4",fen:"5rk1/1p3ppp/3p4/8/P2QPpPq/6nP/6K1/4R3",eval:"+0.04",rank:2,cpl:18,pm:0.3,gap:7,cmplx:5.1},
+    {label:"28... Qe7",fen:"5rk1/1p2qppp/3p4/8/P2QPpP1/6nP/6K1/4R3",eval:"+0.04"},
+    {label:"29. e5",fen:"5rk1/1p2qppp/3p4/4P3/P2Q1pP1/6nP/6K1/4R3",eval:"+0.04",rank:1,cpl:0,pm:0.11,gap:10,cmplx:5.0},
+    {label:"29... Re8",fen:"4r1k1/1p2qppp/3p4/4P3/P2Q1pP1/6nP/6K1/4R3",eval:"+0.04"},
+    {label:"30. Qxf4",fen:"4r1k1/1p2qppp/3p4/4P3/P4QP1/6nP/6K1/4R3",eval:"+0.04",rank:3,cpl:18,pm:0.41,gap:4,cmplx:6.6},
+    {label:"30... Nh5",fen:"4r1k1/1p2qppp/3p4/4P2n/P4QP1/7P/6K1/4R3",eval:"+0.04"},
+    {label:"31. gxh5",fen:"4r1k1/1p2qppp/3p4/4P2P/P4Q2/7P/6K1/4R3",eval:"+0.04",rank:4,cpl:34,pm:0.34,gap:1,cmplx:3.6},
+    {label:"31... dxe5",fen:"4r1k1/1p2qppp/8/4p2P/P4Q2/7P/6K1/4R3",eval:"+0.04"},
+    {label:"32. Qg4",fen:"4r1k1/1p2qppp/8/4p2P/P5Q1/7P/6K1/4R3",eval:"+0.04",rank:1,cpl:0,pm:0.26,gap:7,cmplx:3.7},
+    {label:"32... Qf6",fen:"4r1k1/1p3ppp/5q2/4p2P/P5Q1/7P/6K1/4R3",eval:"+0.04"},
+    {label:"33. Qd7",fen:"4r1k1/1p1Q1ppp/5q2/4p2P/P7/7P/6K1/4R3",eval:"+0.04",rank:1,cpl:0,pm:0.24,gap:6,cmplx:5.9},
+    {label:"33... Qc6+",fen:"4r1k1/1p1Q1ppp/2q5/4p2P/P7/7P/6K1/4R3",eval:"+0.04"},
+    {label:"34. Qxc6",fen:"4r1k1/1p3ppp/2Q5/4p2P/P7/7P/6K1/4R3",eval:"+0.04",rank:2,cpl:3,pm:0.21,gap:6,cmplx:5.6},
+    {label:"34... bxc6",fen:"4r1k1/5ppp/2p5/4p2P/P7/7P/6K1/4R3",eval:"+0.04"},
+    {label:"35. Rc1",fen:"4r1k1/5ppp/2p5/4p2P/P7/7P/6K1/2R5",eval:"+0.04",rank:4,cpl:23,pm:0.5,gap:5,cmplx:4.2},
+    {label:"35... Rc8",fen:"2r3k1/5ppp/2p5/4p2P/P7/7P/6K1/2R5",eval:"+0.04"},
+    {label:"36. Rc5",fen:"2r3k1/5ppp/2p5/2R1p2P/P7/7P/6K1/8",eval:"+0.04",rank:4,cpl:50,pm:0.49,gap:10,cmplx:3.6},
+    {label:"36... f6",fen:"2r3k1/6pp/2p2p2/2R1p2P/P7/7P/6K1/8",eval:"+0.04"},
+    {label:"37. a5",fen:"2r3k1/6pp/2p2p2/P1R1p2P/8/7P/6K1/8",eval:"+0.04",rank:1,cpl:0,pm:0.5,gap:79,cmplx:1.5},
+    {label:"37... Kf7",fen:"2r5/5kpp/2p2p2/P1R1p2P/8/7P/6K1/8",eval:"+0.04"},
+    {label:"38. Kf3",fen:"2r5/5kpp/2p2p2/P1R1p2P/8/5K1P/8/8",eval:"+0.04",rank:1,cpl:0,pm:0.41,gap:17,cmplx:3.1},
+    {label:"38... Ke6",fen:"2r5/6pp/2p1kp2/P1R1p2P/8/5K1P/8/8",eval:"+0.04"},
+    {label:"39. a6",fen:"2r5/6pp/P1p1kp2/2R1p2P/8/5K1P/8/8",eval:"+0.04",rank:2,cpl:10,pm:0.5,gap:6,cmplx:4.8},
+    {label:"39... Kd6",fen:"2r5/6pp/P1pk1p2/2R1p2P/8/5K1P/8/8",eval:"+0.04"},
+    {label:"40. Ra5",fen:"2r5/6pp/P1pk1p2/R3p2P/8/5K1P/8/8",eval:"+0.04",rank:1,cpl:0,pm:0.37,gap:19,cmplx:3.3},
+    {label:"40... Ra8",fen:"r7/6pp/P1pk1p2/R3p2P/8/5K1P/8/8",eval:"+0.04"},
+    {label:"41. Ke4",fen:"r7/6pp/P1pk1p2/R3p2P/4K3/7P/8/8",eval:"+0.04",rank:4,cpl:67,pm:0.42,gap:5,cmplx:4.4},
+    {label:"41... Kc7",fen:"r7/2k3pp/P1p2p2/R3p2P/4K3/7P/8/8",eval:"+0.04"},
+    {label:"42. h6",fen:"r7/2k3pp/P1p2p1P/R3p3/4K3/7P/8/8",eval:"+0.04",rank:2,cpl:1,pm:0.44,gap:4,cmplx:4.6},
+    {label:"42... g6",fen:"r7/2k4p/P1p2ppP/R3p3/4K3/7P/8/8",eval:"+0.04"},
+    {label:"43. Ra1",fen:"r7/2k4p/P1p2ppP/4p3/4K3/7P/8/R7",eval:"+0.04",rank:1,cpl:0,pm:0.53,gap:37,cmplx:2.5},
+    {label:"43... Kb6",fen:"r7/7p/Pkp2ppP/4p3/4K3/7P/8/R7",eval:"+0.04"},
+    {label:"44. Rf1",fen:"r7/7p/Pkp2ppP/4p3/4K3/7P/8/5R2",eval:"+0.04",rank:3,cpl:29,pm:0.43,gap:21,cmplx:3.6},
+    {label:"44... Rf8",fen:"5r2/7p/Pkp2ppP/4p3/4K3/7P/8/5R2",eval:"+0.04"},
+    {label:"45. Ra1",fen:"5r2/7p/Pkp2ppP/4p3/4K3/7P/8/R7",eval:"+0.04",rank:3,cpl:24,pm:0.34,gap:20,cmplx:3.2},
+    {label:"45... Rf7",fen:"8/5r1p/Pkp2ppP/4p3/4K3/7P/8/R7",eval:"+0.04"},
+    {label:"46. h4",fen:"8/5r1p/Pkp2ppP/4p3/4K2P/8/8/R7",eval:"+0.04",rank:3,cpl:26,pm:0.49,gap:18,cmplx:4.0},
+    {label:"46... Re7",fen:"8/4r2p/Pkp2ppP/4p3/4K2P/8/8/R7",eval:"+0.04"},
+    {label:"47. Ra2",fen:"8/4r2p/Pkp2ppP/4p3/4K2P/8/R7/8",eval:"+0.04",rank:3,cpl:38,pm:0.47,gap:33,cmplx:3.2},
+    {label:"47... f5+",fen:"8/4r2p/Pkp3pP/4pp2/4K2P/8/R7/8",eval:"+0.04"},
+    {label:"48. Ke3",fen:"8/4r2p/Pkp3pP/4pp2/7P/4K3/R7/8",eval:"+0.04",rank:2,cpl:10,pm:0.57,gap:17,cmplx:3.1},
+    {label:"48... e4",fen:"8/4r2p/Pkp3pP/5p2/4p2P/4K3/R7/8",eval:"+0.04"},
+    {label:"49. Ra1",fen:"8/4r2p/Pkp3pP/5p2/4p2P/4K3/8/R7",eval:"+0.04",rank:4,cpl:90,pm:0.56,gap:9,cmplx:3.9},
+    {label:"49... Ra7",fen:"8/r6p/Pkp3pP/5p2/4p2P/4K3/8/R7",eval:"+0.04"},
+    {label:"50. h5",fen:"8/r6p/Pkp3pP/5p1P/4p3/4K3/8/R7",eval:"+0.04",rank:4,cpl:62,pm:0.25,gap:1,cmplx:4.2},
+    {label:"50... gxh5",fen:"8/r6p/Pkp4P/5p1p/4p3/4K3/8/R7",eval:"+0.04"},
+    {label:"51. Rf1",fen:"8/r6p/Pkp4P/5p1p/4p3/4K3/8/5R2",eval:"+0.04",rank:4,cpl:45,pm:0.26,gap:1,cmplx:5.3},
+    {label:"51... Rf7",fen:"8/5r1p/Pkp4P/5p1p/4p3/4K3/8/5R2",eval:"+0.04"},
+    {label:"52. Ra1",fen:"8/5r1p/Pkp4P/5p1p/4p3/4K3/8/R7",eval:"+0.04",rank:3,cpl:36,pm:0.25,gap:8,cmplx:5.3},
+    {label:"52... c5",fen:"8/5r1p/Pk5P/2p2p1p/4p3/4K3/8/R7",eval:"+0.04"},
+    {label:"53. Kf4",fen:"8/5r1p/Pk5P/2p2p1p/4pK2/8/8/R7",eval:"+0.04",rank:4,cpl:27,pm:0.46,gap:22,cmplx:3.7},
+    {label:"53... Re7",fen:"8/4r2p/Pk5P/2p2p1p/4pK2/8/8/R7",eval:"+0.04"},
+    {label:"54. Kxf5",fen:"8/4r2p/Pk5P/2p2K1p/4p3/8/8/R7",eval:"+0.04",rank:4,cpl:47,pm:0.44,gap:21,cmplx:3.5},
+    {label:"54... e3",fen:"8/4r2p/Pk5P/2p2K1p/8/4p3/8/R7",eval:"+0.04"},
+    {label:"55. Kf6",fen:"8/4r2p/Pk3K1P/2p4p/8/4p3/8/R7",eval:"+0.04",rank:4,cpl:61,pm:0.31,gap:12,cmplx:3.6},
+    {label:"55... Ra7",fen:"8/r6p/Pk3K1P/2p4p/8/4p3/8/R7",eval:"+0.04"},
+    {label:"56. Re1",fen:"8/r6p/Pk3K1P/2p4p/8/4p3/8/4R3",eval:"+0.04",rank:3,cpl:27,pm:0.28,gap:32,cmplx:3.0},
+    {label:"56... Rxa6",fen:"8/7p/rk3K1P/2p4p/8/4p3/8/4R3",eval:"+0.04"},
+    {label:"57. Rxe3",fen:"8/7p/rk3K1P/2p4p/8/4R3/8/8",eval:"+0.04",rank:2,cpl:13,pm:0.74,gap:19,cmplx:2.6}
+  ]},
+  // Game 3: Bogo Indian Defense -- 0815original vs MadMaxPayne26 (flagged, 2400-2600)
+  { name:"Bogo Indian Defense -- 0815original vs MadMaxPayne26", band:"2400-2600", suspect:true, suspectColor:"white", moves:[
+    {label:"1. c4",fen:"rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR",eval:"+0.55",rank:1,cpl:0,pm:0.68,gap:13,cmplx:2.5},
+    {label:"1... Nf6",fen:"rnbqkb1r/pppppppp/5n2/8/2P5/8/PP1PPPPP/RNBQKBNR",eval:"+0.03"},
+    {label:"2. d4",fen:"rnbqkb1r/pppppppp/5n2/8/2PP4/8/PP2PPPP/RNBQKBNR",eval:"+0.44",rank:1,cpl:0,pm:0.39,gap:18,cmplx:3.5},
+    {label:"2... e6",fen:"rnbqkb1r/pppp1ppp/4pn2/8/2PP4/8/PP2PPPP/RNBQKBNR",eval:"+0.20"},
+    {label:"3. Nf3",fen:"rnbqkb1r/pppp1ppp/4pn2/8/2PP4/5N2/PP2PPPP/RNBQKB1R",eval:"+0.31",rank:1,cpl:0,pm:0.8,gap:26,cmplx:2.6},
+    {label:"3... Bb4+",fen:"rnbqk2r/pppp1ppp/4pn2/8/1bPP4/5N2/PP2PPPP/RNBQKB1R",eval:"+0.21"},
+    {label:"4. Bd2",fen:"rnbqk2r/pppp1ppp/4pn2/8/1bPP4/5N2/PP1BPPPP/RN1QKB1R",eval:"+0.32",rank:1,cpl:0,pm:0.38,gap:17,cmplx:3.5},
+    {label:"4... Qe7",fen:"rnb1k2r/ppppqppp/4pn2/8/1bPP4/5N2/PP1BPPPP/RN1QKB1R",eval:"+0.14"},
+    {label:"5. g3",fen:"rnb1k2r/ppppqppp/4pn2/8/1bPP4/5NP1/PP1BPP1P/RN1QKB1R",eval:"+0.44",rank:3,cpl:19,pm:0.53,gap:83,cmplx:1.0},
+    {label:"5... Ne4",fen:"rnb1k2r/ppppqppp/4p3/8/1bPPn3/5NP1/PP1BPP1P/RN1QKB1R",eval:"+0.34"},
+    {label:"6. Bg2",fen:"rnb1k2r/ppppqppp/4p3/8/1bPPn3/5NP1/PP1BPPBP/RN1QK2R",eval:"+0.58",rank:3,cpl:37,pm:0.68,gap:1,cmplx:2.7},
+    {label:"6... O-O",fen:"rnb2rk1/ppppqppp/4p3/8/1bPPn3/5NP1/PP1BPPBP/RN1QK2R",eval:"+0.59"},
+    {label:"7. O-O",fen:"rnb2rk1/ppppqppp/4p3/8/1bPPn3/5NP1/PP1BPPBP/RN1Q1RK1",eval:"+0.74",rank:1,cpl:0,pm:0.29,gap:30,cmplx:3.1},
+    {label:"7... Bxd2",fen:"rnb2rk1/ppppqppp/4p3/8/2PPn3/5NP1/PP1bPPBP/RN1Q1RK1",eval:"+0.70"},
+    {label:"8. Nbxd2",fen:"rnb2rk1/ppppqppp/4p3/8/2PPn3/5NP1/PP1NPPBP/R2Q1RK1",eval:"+0.80",rank:1,cpl:0,pm:0.26,gap:1,cmplx:5.1},
+    {label:"8... Nxd2",fen:"rnb2rk1/ppppqppp/4p3/8/2PP4/5NP1/PP1nPPBP/R2Q1RK1",eval:"+0.52"},
+    {label:"9. Qxd2",fen:"rnb2rk1/ppppqppp/4p3/8/2PP4/5NP1/PP1QPPBP/R4RK1",eval:"+0.56",rank:1,cpl:0,pm:0.59,gap:23,cmplx:3.8},
+    {label:"9... a5",fen:"rnb2rk1/1pppqppp/4p3/p7/2PP4/5NP1/PP1QPPBP/R4RK1",eval:"+0.47"},
+    {label:"10. c5",fen:"rnb2rk1/1pppqppp/4p3/p1P5/3P4/5NP1/PP1QPPBP/R4RK1",eval:"+0.87",rank:1,cpl:0,pm:0.38,gap:10,cmplx:3.8},
+    {label:"10... d5",fen:"rnb2rk1/1pp1qppp/4p3/p1Pp4/3P4/5NP1/PP1QPPBP/R4RK1",eval:"+0.87"},
+    {label:"11. Ne5",fen:"rnb2rk1/1pp1qppp/4p3/p1PpN3/3P4/6P1/PP1QPPBP/R4RK1",eval:"+0.87",rank:1,cpl:0,pm:0.28,gap:9,cmplx:5.4},
+    {label:"11... Nc6",fen:"r1b2rk1/1pp1qppp/2n1p3/p1PpN3/3P4/6P1/PP1QPPBP/R4RK1",eval:"+0.87"},
+    {label:"12. Nxc6",fen:"r1b2rk1/1pp1qppp/2N1p3/p1Pp4/3P4/6P1/PP1QPPBP/R4RK1",eval:"+0.87",rank:1,cpl:0,pm:0.19,gap:5,cmplx:6.3},
+    {label:"12... bxc6",fen:"r1b2rk1/2p1qppp/2p1p3/p1Pp4/3P4/6P1/PP1QPPBP/R4RK1",eval:"+0.87"},
+    {label:"13. f4",fen:"r1b2rk1/2p1qppp/2p1p3/p1Pp4/3P1P2/6P1/PP1QP1BP/R4RK1",eval:"+0.87",rank:1,cpl:0,pm:0.25,gap:1,cmplx:4.5},
+    {label:"13... f6",fen:"r1b2rk1/2p1q1pp/2p1pp2/p1Pp4/3P1P2/6P1/PP1QP1BP/R4RK1",eval:"+0.87"},
+    {label:"14. e4",fen:"r1b2rk1/2p1q1pp/2p1pp2/p1Pp4/3PPP2/6P1/PP1Q2BP/R4RK1",eval:"+0.87",rank:3,cpl:5,pm:0.15,gap:1,cmplx:5.4},
+    {label:"14... Qd7",fen:"r1b2rk1/2pq2pp/2p1pp2/p1Pp4/3PPP2/6P1/PP1Q2BP/R4RK1",eval:"+0.87"},
+    {label:"15. Rfe1",fen:"r1b2rk1/2pq2pp/2p1pp2/p1Pp4/3PPP2/6P1/PP1Q2BP/R3R1K1",eval:"+0.87",rank:2,cpl:8,pm:0.37,gap:5,cmplx:4.5},
+    {label:"15... Rd8",fen:"r1br2k1/2pq2pp/2p1pp2/p1Pp4/3PPP2/6P1/PP1Q2BP/R3R1K1",eval:"+0.87"},
+    {label:"16. exd5",fen:"r1br2k1/2pq2pp/2p1pp2/p1PP4/3P1P2/6P1/PP1Q2BP/R3R1K1",eval:"+0.87",rank:1,cpl:0,pm:0.34,gap:6,cmplx:4.9},
+    {label:"16... cxd5",fen:"r1br2k1/2pq2pp/4pp2/p1Pp4/3P1P2/6P1/PP1Q2BP/R3R1K1",eval:"+0.87"},
+    {label:"17. Re3",fen:"r1br2k1/2pq2pp/4pp2/p1Pp4/3P1P2/4R1P1/PP1Q2BP/R5K1",eval:"+0.87",rank:3,cpl:26,pm:0.42,gap:19,cmplx:3.6},
+    {label:"17... a4",fen:"r1br2k1/2pq2pp/4pp2/2Pp4/p2P1P2/4R1P1/PP1Q2BP/R5K1",eval:"+0.87"},
+    {label:"18. Rae1",fen:"r1br2k1/2pq2pp/4pp2/2Pp4/p2P1P2/4R1P1/PP1Q2BP/4R1K1",eval:"+0.87",rank:1,cpl:0,pm:0.21,gap:10,cmplx:5.8},
+    {label:"18... Qc6",fen:"r1br2k1/2p3pp/2q1pp2/2Pp4/p2P1P2/4R1P1/PP1Q2BP/4R1K1",eval:"+0.87"},
+    {label:"19. h4",fen:"r1br2k1/2p3pp/2q1pp2/2Pp4/p2P1P1P/4R1P1/PP1Q2B1/4R1K1",eval:"+0.87",rank:2,cpl:12,pm:0.33,gap:16,cmplx:3.7},
+    {label:"19... f5",fen:"r1br2k1/2p3pp/2q1p3/2Pp1p2/p2P1P1P/4R1P1/PP1Q2B1/4R1K1",eval:"+0.87"},
+    {label:"20. h5",fen:"r1br2k1/2p3pp/2q1p3/2Pp1p1P/p2P1P2/4R1P1/PP1Q2B1/4R1K1",eval:"+0.87",rank:1,cpl:0,pm:0.15,gap:4,cmplx:5.7},
+    {label:"20... Bd7",fen:"r2r2k1/2pb2pp/2q1p3/2Pp1p1P/p2P1P2/4R1P1/PP1Q2B1/4R1K1",eval:"+0.87"},
+    {label:"21. Bf3",fen:"r2r2k1/2pb2pp/2q1p3/2Pp1p1P/p2P1P2/4RBP1/PP1Q4/4R1K1",eval:"+0.87",rank:1,cpl:0,pm:0.19,gap:6,cmplx:5.9},
+    {label:"21... Rf8",fen:"r4rk1/2pb2pp/2q1p3/2Pp1p1P/p2P1P2/4RBP1/PP1Q4/4R1K1",eval:"+0.87"},
+    {label:"22. Kh2",fen:"r4rk1/2pb2pp/2q1p3/2Pp1p1P/p2P1P2/4RBP1/PP1Q3K/4R3",eval:"+0.87",rank:4,cpl:96,pm:0.34,gap:9,cmplx:4.1},
+    {label:"22... Rab8",fen:"1r3rk1/2pb2pp/2q1p3/2Pp1p1P/p2P1P2/4RBP1/PP1Q3K/4R3",eval:"+0.87"},
+    {label:"23. Re5",fen:"1r3rk1/2pb2pp/2q1p3/2PpRp1P/p2P1P2/5BP1/PP1Q3K/4R3",eval:"+0.87",rank:1,cpl:0,pm:0.64,gap:1,cmplx:4.6},
+    {label:"23... Qb5",fen:"1r3rk1/2pb2pp/4p3/1qPpRp1P/p2P1P2/5BP1/PP1Q3K/4R3",eval:"+0.87"},
+    {label:"24. R1e2",fen:"1r3rk1/2pb2pp/4p3/1qPpRp1P/p2P1P2/5BP1/PP1QR2K/8",eval:"+0.87",rank:3,cpl:28,pm:0.17,gap:2,cmplx:5.8},
+    {label:"24... Qb4",fen:"1r3rk1/2pb2pp/4p3/2PpRp1P/pq1P1P2/5BP1/PP1QR2K/8",eval:"+0.87"},
+    {label:"25. Qe3",fen:"1r3rk1/2pb2pp/4p3/2PpRp1P/pq1P1P2/4QBP1/PP2R2K/8",eval:"+0.87",rank:1,cpl:0,pm:0.44,gap:8,cmplx:3.6},
+    {label:"25... Rf6",fen:"1r4k1/2pb2pp/4pr2/2PpRp1P/pq1P1P2/4QBP1/PP2R2K/8",eval:"+0.87"},
+    {label:"26. Rg2",fen:"1r4k1/2pb2pp/4pr2/2PpRp1P/pq1P1P2/4QBP1/PP4RK/8",eval:"+0.87",rank:3,cpl:43,pm:0.59,gap:25,cmplx:3.3},
+    {label:"26... Rbf8",fen:"5rk1/2pb2pp/4pr2/2PpRp1P/pq1P1P2/4QBP1/PP4RK/8",eval:"+0.87"},
+    {label:"27. a3",fen:"5rk1/2pb2pp/4pr2/2PpRp1P/pq1P1P2/P3QBP1/1P4RK/8",eval:"+0.87",rank:1,cpl:0,pm:0.24,gap:3,cmplx:5.7},
+    {label:"27... Qc4",fen:"5rk1/2pb2pp/4pr2/2PpRp1P/p1qP1P2/P3QBP1/1P4RK/8",eval:"+0.87"},
+    {label:"28. Be2",fen:"5rk1/2pb2pp/4pr2/2PpRp1P/p1qP1P2/P3Q1P1/1P2B1RK/8",eval:"+0.87",rank:1,cpl:0,pm:0.53,gap:9,cmplx:4.9},
+    {label:"28... Qa2",fen:"5rk1/2pb2pp/4pr2/2PpRp1P/p2P1P2/P3Q1P1/qP2B1RK/8",eval:"+0.87"},
+    {label:"29. Bd3",fen:"5rk1/2pb2pp/4pr2/2PpRp1P/p2P1P2/P2BQ1P1/qP4RK/8",eval:"+0.87",rank:1,cpl:0,pm:0.4,gap:4,cmplx:5.0},
+    {label:"29... Rb8",fen:"1r4k1/2pb2pp/4pr2/2PpRp1P/p2P1P2/P2BQ1P1/qP4RK/8",eval:"+0.87"},
+    {label:"30. Qd2",fen:"1r4k1/2pb2pp/4pr2/2PpRp1P/p2P1P2/P2B2P1/qP1Q2RK/8",eval:"+0.87",rank:1,cpl:0,pm:0.55,gap:3,cmplx:3.4},
+    {label:"30... Bb5",fen:"1r4k1/2p3pp/4pr2/1bPpRp1P/p2P1P2/P2B2P1/qP1Q2RK/8",eval:"+0.87"},
+    {label:"31. Bxb5",fen:"1r4k1/2p3pp/4pr2/1BPpRp1P/p2P1P2/P5P1/qP1Q2RK/8",eval:"+0.87",rank:3,cpl:35,pm:0.57,gap:17,cmplx:3.4},
+    {label:"31... Rxb5",fen:"6k1/2p3pp/4pr2/1rPpRp1P/p2P1P2/P5P1/qP1Q2RK/8",eval:"+0.87"},
+    {label:"32. Qe2",fen:"6k1/2p3pp/4pr2/1rPpRp1P/p2P1P2/P5P1/qP2Q1RK/8",eval:"+0.87",rank:3,cpl:5,pm:0.08,gap:28,cmplx:3.3},
+    {label:"32... Qc4",fen:"6k1/2p3pp/4pr2/1rPpRp1P/p1qP1P2/P5P1/1P2Q1RK/8",eval:"+0.87"},
+    {label:"33. Rxe6",fen:"6k1/2p3pp/4Rr2/1rPp1p1P/p1qP1P2/P5P1/1P2Q1RK/8",eval:"+0.87",rank:1,cpl:0,pm:0.36,gap:1,cmplx:4.5},
+    {label:"33... Qxe2",fen:"6k1/2p3pp/4Rr2/1rPp1p1P/p2P1P2/P5P1/1P2q1RK/8",eval:"+0.87"},
+    {label:"34. Rexe2",fen:"6k1/2p3pp/5r2/1rPp1p1P/p2P1P2/P5P1/1P2R1RK/8",eval:"+0.87",rank:1,cpl:0,pm:0.28,gap:15,cmplx:3.7},
+    {label:"34... Rh6",fen:"6k1/2p3pp/7r/1rPp1p1P/p2P1P2/P5P1/1P2R1RK/8",eval:"+0.87"},
+    {label:"35. Re8+",fen:"4R1k1/2p3pp/7r/1rPp1p1P/p2P1P2/P5P1/1P4RK/8",eval:"+0.87",rank:1,cpl:0,pm:0.13,gap:4,cmplx:5.2},
+    {label:"35... Kf7",fen:"4R3/2p2kpp/7r/1rPp1p1P/p2P1P2/P5P1/1P4RK/8",eval:"+0.87"},
+    {label:"36. Rge2",fen:"4R3/2p2kpp/7r/1rPp1p1P/p2P1P2/P5P1/1P2R2K/8",eval:"+0.87",rank:1,cpl:0,pm:0.35,gap:32,cmplx:2.6},
+    {label:"36... Rxh5+",fen:"4R3/2p2kpp/8/1rPp1p1r/p2P1P2/P5P1/1P2R2K/8",eval:"+0.87"},
+    {label:"37. Kg1",fen:"4R3/2p2kpp/8/1rPp1p1r/p2P1P2/P5P1/1P2R3/6K1",eval:"+0.87",rank:1,cpl:0,pm:0.29,gap:2,cmplx:3.5},
+    {label:"37... g5",fen:"4R3/2p2k1p/8/1rPp1ppr/p2P1P2/P5P1/1P2R3/6K1",eval:"+0.87"},
+    {label:"38. R8e7+",fen:"8/2p1Rk1p/8/1rPp1ppr/p2P1P2/P5P1/1P2R3/6K1",eval:"+0.87",rank:1,cpl:0,pm:0.7,gap:4,cmplx:2.7},
+    {label:"38... Kf8",fen:"5k2/2p1R2p/8/1rPp1ppr/p2P1P2/P5P1/1P2R3/6K1",eval:"+0.87"},
+    {label:"39. Rxc7",fen:"5k2/2R4p/8/1rPp1ppr/p2P1P2/P5P1/1P2R3/6K1",eval:"+0.87",rank:1,cpl:0,pm:0.45,gap:1,cmplx:4.3},
+    {label:"39... Rh3",fen:"5k2/2R4p/8/1rPp1pp1/p2P1P2/P5Pr/1P2R3/6K1",eval:"+0.87"},
+    {label:"40. Kg2",fen:"5k2/2R4p/8/1rPp1pp1/p2P1P2/P5Pr/1P2R1K1/8",eval:"+0.87",rank:1,cpl:0,pm:0.24,gap:8,cmplx:4.8},
+    {label:"40... g4",fen:"5k2/2R4p/8/1rPp1p2/p2P1Pp1/P5Pr/1P2R1K1/8",eval:"+0.87"},
+    {label:"41. Rce7",fen:"5k2/4R2p/8/1rPp1p2/p2P1Pp1/P5Pr/1P2R1K1/8",eval:"+0.87",rank:1,cpl:0,pm:0.45,gap:16,cmplx:2.7},
+    {label:"41... Rxb2",fen:"5k2/4R2p/8/2Pp1p2/p2P1Pp1/P5Pr/1r2R1K1/8",eval:"+0.87"},
+    {label:"42. Rxb2",fen:"5k2/4R2p/8/2Pp1p2/p2P1Pp1/P5Pr/1R4K1/8",eval:"+0.87",rank:1,cpl:0,pm:0.23,gap:4,cmplx:3.3},
+    {label:"42... Kxe7",fen:"8/4k2p/8/2Pp1p2/p2P1Pp1/P5Pr/1R4K1/8",eval:"+0.87"},
+    {label:"43. Re2+",fen:"8/4k2p/8/2Pp1p2/p2P1Pp1/P5Pr/4R1K1/8",eval:"+0.87",rank:1,cpl:0,pm:0.48,gap:31,cmplx:3.5},
+    {label:"43... Kd7",fen:"8/3k3p/8/2Pp1p2/p2P1Pp1/P5Pr/4R1K1/8",eval:"+0.87"},
+    {label:"44. Re5",fen:"8/3k3p/8/2PpRp2/p2P1Pp1/P5Pr/6K1/8",eval:"+0.87",rank:1,cpl:0,pm:0.63,gap:22,cmplx:2.7},
+    {label:"44... h5",fen:"8/3k4/8/2PpRp1p/p2P1Pp1/P5Pr/6K1/8",eval:"+0.87"},
+    {label:"45. Rxd5+",fen:"8/3k4/8/2PR1p1p/p2P1Pp1/P5Pr/6K1/8",eval:"+0.87",rank:1,cpl:0,pm:0.77,gap:27,cmplx:2.7},
+    {label:"45... Kc6",fen:"8/8/2k5/2PR1p1p/p2P1Pp1/P5Pr/6K1/8",eval:"+0.87"},
+    {label:"46. Rd6+",fen:"8/8/2kR4/2P2p1p/p2P1Pp1/P5Pr/6K1/8",eval:"+0.87",rank:1,cpl:0,pm:0.77,gap:37,cmplx:2.8},
+    {label:"46... Kc7",fen:"8/2k5/3R4/2P2p1p/p2P1Pp1/P5Pr/6K1/8",eval:"+0.87"},
+    {label:"47. Rh6",fen:"8/2k5/7R/2P2p1p/p2P1Pp1/P5Pr/6K1/8",eval:"+0.87",rank:2,cpl:11,pm:0.75,gap:26,cmplx:3.0},
+    {label:"47... Kd7",fen:"8/3k4/7R/2P2p1p/p2P1Pp1/P5Pr/6K1/8",eval:"+0.87"},
+    {label:"48. d5",fen:"8/3k4/7R/2PP1p1p/p4Pp1/P5Pr/6K1/8",eval:"+0.87",rank:2,cpl:17,pm:0.46,gap:2,cmplx:4.7},
+    {label:"48... Kc7",fen:"8/2k5/7R/2PP1p1p/p4Pp1/P5Pr/6K1/8",eval:"+0.87"},
+    {label:"49. Rh7+",fen:"8/2k4R/8/2PP1p1p/p4Pp1/P5Pr/6K1/8",eval:"+0.87",rank:1,cpl:0,pm:0.88,gap:19,cmplx:2.8},
+    {label:"49... Kb8",fen:"1k6/7R/8/2PP1p1p/p4Pp1/P5Pr/6K1/8",eval:"+0.87"},
+    {label:"50. c6",fen:"1k6/7R/2P5/3P1p1p/p4Pp1/P5Pr/6K1/8",eval:"+0.87",rank:1,cpl:0,pm:0.53,gap:5,cmplx:4.4}
+  ]}
+];
+let IX_GAME_IDX = 0;
+let IX_MOVES = IX_GAMES[0].moves;
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  // ── 01: Hero entrance animation ──
+  const heroTL = gsap.timeline({ defaults: { ease: 'power3.out' } });
+  heroTL
+    .from('.hero-badge', { opacity: 0, y: 40, duration: 1 })
+    .from('.hero-title', { opacity: 0, y: 60, scale: 0.95, duration: 1.2 }, '-=0.6')
+    .from('.hero-desc',  { opacity: 0, y: 30, duration: 0.8 }, '-=0.7')
+    .from('.hero-actions',{ opacity: 0, y: 30, duration: 0.8 }, '-=0.5')
+    .from('.hero-scroll-hint', { opacity: 0, duration: 1 }, '-=0.3');
+
+  // Hero content fades naturally with CSS — no scroll-linked animation
+
+  // ── 02: Interactive Analysis — continuous auto-play ──
+  const ixTermBody = document.getElementById('ix-term-body');
+  const ixSection = document.getElementById('ix-section');
+
+  if (ixTermBody && ixSection) {
+    let ixMoveIdx = 0;
+    let ixTimer = null;
+    let ixActive = false;
+    let ixT1Count = 0;
+
+    // Per-move log-LR computation (mirrors paper Eq. 7-8)
+    // l_m(r) = log(r + (1-r)*p_m) - log(p_m) if T1, else log(1-r)
+    function ixPerMoveLR(matched, pm, r) {
+      if (matched) return Math.log(r + (1-r)*pm) - Math.log(pm);
+      return Math.log(1 - r);
+    }
+
+    // Mixture rates from the paper (Section 5.2)
+    const IX_RATES = [0.10, 0.25, 0.50, 1.0];
+    let ixCumLR = [0, 0, 0, 0]; // cumulative per-rate log-LR
+    let ixScoredMoves = 0; // count of suspect's moves scored
+
+    // Generate terminal lines for a given ply
+    function ixTermLines(i) {
+      const m = IX_MOVES[i];
+      const isScored = m.rank !== undefined; // suspect's move (has forensic data)
+      const lines = [];
+      const game = IX_GAMES[IX_GAME_IDX];
+      const fullMove = Math.ceil((i + 1) / 2);
+
+      // Timestamp based on elapsed analysis time
+      const elapsed = ((i + 1) * 0.42);
+      const mins = Math.floor(elapsed / 60);
+      const secs = (elapsed % 60).toFixed(1);
+      const ts = '[' + String(mins).padStart(2,'0') + ':' + secs.padStart(4,'0') + ']';
+
+      if (isScored) {
+        // Engine analysis line for suspect's move
+        const depth = i < 12 ? 12 : (i < 24 ? 18 : 22);
+        lines.push({type:'eval', text:ts + '  d=' + depth + '  eval ' + m.eval + '  gap=' + m.gap + 'cp  C=' + m.cmplx.toFixed(1)});
+
+        // Per-move scoring: T1 match check and log-LR
+        const matched = m.rank === 1;
+        if (matched) ixT1Count++;
+        ixScoredMoves++;
+
+        const rankLabel = m.rank <= 3 ? 'T' + m.rank : 'T4+';
+        const matchCol = matched ? 'T1' : rankLabel;
+        lines.push({type:'info', text:ts + '  ' + m.label + '  ' + matchCol + '  CPL=' + m.cpl + '  p_m=' + m.pm.toFixed(2)});
+
+        // Compute per-move log-LR for each assistance rate
+        for (let ri = 0; ri < IX_RATES.length; ri++) {
+          ixCumLR[ri] += ixPerMoveLR(matched, m.pm, IX_RATES[ri]);
+        }
+
+        // Show per-move log-LR at r=0.25 for the current move
+        const moveLR = ixPerMoveLR(matched, m.pm, 0.25);
+        const moveDb = (10 * moveLR / Math.LN10).toFixed(1);
+        if (m.pm < 0.45 && matched) {
+          lines.push({type:'signal', text:'  log-LR(r=25%): ' + (moveDb > 0 ? '+' : '') + moveDb + ' dB   (low p_m=' + m.pm.toFixed(2) + ', T1 match)'});
+        }
+
+        // Periodic summary every 5 scored moves or at end
+        const isLast = i >= IX_MOVES.length - 2;
+        if (ixScoredMoves > 0 && (ixScoredMoves % 5 === 0 || isLast)) {
+          // Mixture marginal: logsumexp over rates with uniform prior
+          const logPrior = -Math.log(IX_RATES.length);
+          let maxVal = -Infinity;
+          for (let ri = 0; ri < IX_RATES.length; ri++) {
+            const v = ixCumLR[ri] + logPrior;
+            if (v > maxVal) maxVal = v;
+          }
+          let sumExp = 0;
+          for (let ri = 0; ri < IX_RATES.length; ri++) {
+            sumExp += Math.exp(ixCumLR[ri] + logPrior - maxVal);
+          }
+          const mixLR = maxVal + Math.log(sumExp);
+          const mixDb = (10 * mixLR / Math.LN10).toFixed(1);
+          const t1Rate = (ixT1Count / ixScoredMoves * 100).toFixed(0);
+
+          lines.push({type:'blank', text:''});
+          lines.push({type:'signal', text:'  --- Move ' + ixScoredMoves + ' summary ---'});
+          lines.push({type:'signal', text:'  T1 rate: ' + ixT1Count + '/' + ixScoredMoves + ' (' + t1Rate + '%)   band baseline: ~' + (game.band === '2200-2400' ? '46' : game.band === '2000-2200' ? '42' : '38') + '%'});
+          lines.push({type:'signal', text:'  Mixture log-LR: ' + (mixDb > 0 ? '+' : '') + mixDb + ' dB  (rates: 10/25/50/100%)'});
+
+          if (parseFloat(mixDb) > 8) {
+            lines.push({type:'alert', text:'  ALERT: evidence exceeds +' + Math.floor(parseFloat(mixDb)) + ' dB threshold'});
+          }
+        }
+      } else {
+        // Opponent's move — just show the move and eval
+        lines.push({type:'var', text:ts + '  ' + m.label + '  eval ' + m.eval});
+      }
+
+      // Final summary on last ply
+      if (i === IX_MOVES.length - 1) {
+        const logPrior = -Math.log(IX_RATES.length);
+        let maxVal = -Infinity;
+        for (let ri = 0; ri < IX_RATES.length; ri++) {
+          const v = ixCumLR[ri] + logPrior;
+          if (v > maxVal) maxVal = v;
+        }
+        let sumExp = 0;
+        for (let ri = 0; ri < IX_RATES.length; ri++) {
+          sumExp += Math.exp(ixCumLR[ri] + logPrior - maxVal);
+        }
+        const mixLR = maxVal + Math.log(sumExp);
+        const mixDb = (10 * mixLR / Math.LN10);
+
+        // Posterior with 1% prior (paper Eq. 12)
+        const logitPrior = Math.log(0.01 / 0.99);
+        const posterior = 1 / (1 + Math.exp(-(logitPrior + mixLR)));
+
+        const t1Rate = ixScoredMoves > 0 ? (ixT1Count / ixScoredMoves * 100).toFixed(1) : '0.0';
+
+        lines.push({type:'blank', text:''});
+        lines.push({type:'stat', text:'===  FINAL VERDICT  ==='});
+        lines.push({type:'stat', text:'Positions scored: ' + ixScoredMoves});
+        lines.push({type:'stat', text:'T1 match rate:    ' + ixT1Count + '/' + ixScoredMoves + ' (' + t1Rate + '%)'});
+        lines.push({type:'stat', text:'Evidence (dB):    ' + (mixDb > 0 ? '+' : '') + mixDb.toFixed(1)});
+        lines.push({type:'stat', text:'Prior:            1.0%'});
+        lines.push({type:'stat', text:'Posterior:        ' + (posterior * 100).toFixed(1) + '%'});
+
+        if (game.suspect && mixDb > 10) {
+          lines.push({type:'alert', text:'Strong evidence of engine assistance.'});
+        } else if (mixDb > 5) {
+          lines.push({type:'signal', text:'Warrants further review.'});
+        } else {
+          lines.push({type:'eval', text:'Consistent with fair play.'});
+        }
+        lines.push({type:'complete', text:'Analysis complete.'});
+      }
+      return lines;
+    }
+
+    function ixAddLine(lineData) {
+      const el = document.createElement('div');
+      el.className = 'ix-term-line ix-line-' + lineData.type;
+      if (lineData.type === 'blank') {
+        el.innerHTML = '&nbsp;';
+      } else if (lineData.type === 'complete') {
+        el.innerHTML = '<span style="color:#4ade80">\u25cf</span> ' + lineData.text;
+      } else {
+        el.textContent = lineData.text;
+      }
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(6px)';
+      ixTermBody.appendChild(el);
+      // Animate in
+      requestAnimationFrame(() => {
+        el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      });
+      ixTermBody.scrollTop = ixTermBody.scrollHeight;
+    }
+
+    function ixPlayMove() {
+      if (ixMoveIdx >= IX_MOVES.length) {
+        // Pause, then restart
+        setTimeout(() => ixReset(), 3000);
+        return;
+      }
+      const m = IX_MOVES[ixMoveIdx];
+      if (window._ixBoard) window._ixBoard.setPosition(m.fen, true);
+      // Type terminal lines for this move
+      const lines = ixTermLines(ixMoveIdx);
+      lines.forEach((line, li) => {
+        setTimeout(() => ixAddLine(line), li * 100);
+      });
+      ixMoveIdx++;
+      // Next move after lines finish + pause (faster for longer games)
+      const delay = lines.length * 120 + 600;
+      ixTimer = setTimeout(ixPlayMove, delay);
+    }
+
+    function ixReset() {
+      // Cycle to next game
+      IX_GAME_IDX = (IX_GAME_IDX + 1) % IX_GAMES.length;
+      IX_MOVES = IX_GAMES[IX_GAME_IDX].moves;
+      const game = IX_GAMES[IX_GAME_IDX];
+
+      ixMoveIdx = 0;
+      ixT1Count = 0;
+      ixScoredMoves = 0;
+      ixCumLR = [0, 0, 0, 0];
+      ixTermBody.innerHTML = '';
+      // Add init lines
+      const initLines = [
+        {type:'system', text:'Loading engine: Stockfish 16 NNUE'},
+        {type:'system', text:'Baseline: ' + game.band + ' band  |  3.4M reference games'},
+        {type:'system', text:'Analysing: ' + game.name + '  (' + (game.suspectColor || 'white') + ')'},
+        {type:'blank', text:''},
+      ];
+      initLines.forEach((line, i) => {
+        setTimeout(() => ixAddLine(line), i * 250);
+      });
+      if (window._ixBoard) {
+        window._ixBoard.setPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', true);
+      }
+      const tt = document.querySelector('.ix-term-title');
+      if (tt) tt.textContent = 'Stockfish 16 \u2022 ' + game.name;
+      ixTimer = setTimeout(ixPlayMove, initLines.length * 250 + 600);
+    }
+
+    function ixStart() {
+      if (ixActive) return;
+      ixActive = true;
+      // On first start, play current game without cycling
+      const game = IX_GAMES[IX_GAME_IDX];
+      IX_MOVES = game.moves;
+      ixMoveIdx = 0;
+      ixT1Count = 0;
+      ixScoredMoves = 0;
+      ixCumLR = [0, 0, 0, 0];
+      ixTermBody.innerHTML = '';
+      const initLines = [
+        {type:'system', text:'Loading engine: Stockfish 16 NNUE'},
+        {type:'system', text:'Baseline: ' + game.band + ' band  |  3.4M reference games'},
+        {type:'system', text:'Analysing: ' + game.name + '  (' + (game.suspectColor || 'white') + ')'},
+        {type:'blank', text:''},
+      ];
+      initLines.forEach((line, i) => {
+        setTimeout(() => ixAddLine(line), i * 250);
+      });
+      if (window._ixBoard) {
+        window._ixBoard.setPosition('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', true);
+      }
+      const tt = document.querySelector('.ix-term-title');
+      if (tt) tt.textContent = 'Stockfish 16 \u2022 ' + game.name;
+      ixTimer = setTimeout(ixPlayMove, initLines.length * 250 + 600);
+    }
+
+    function ixStop() {
+      ixActive = false;
+      if (ixTimer) { clearTimeout(ixTimer); ixTimer = null; }
+    }
+
+    // Start/stop based on visibility
+    const ixObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) ixStart();
+        else ixStop();
+      });
+    }, { threshold: 0.15 });
+    ixObs.observe(ixSection);
+  }
+
+  // ── Initialize the interactive board ──
+  const ixBoardEl = document.getElementById('ix-board');
+  if (ixBoardEl) {
+    const boardBase = 'https://cdn.jsdelivr.net/npm/cm-chessboard@8.7.5/src/';
+    Promise.all([
+      import(boardBase + 'Chessboard.js'),
+      import(boardBase + 'extensions/markers/Markers.js')
+    ]).then(([cb, mk]) => {
+      window._ixBoard = new cb.Chessboard(ixBoardEl, {
+        position: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',
+        assetsUrl: 'https://cdn.jsdelivr.net/npm/cm-chessboard@8.7.5/assets/',
+        style: { cssClass: 'default', borderType: cb.BORDER_TYPE.frame, pieces: { file: 'pieces/staunty.svg' } },
+        extensions: [{ class: mk.Markers }],
+      });
+    }).catch(e => { console.error('IX board init failed:', e); });
+  }
+
+  // Cases header reveal handled by IntersectionObserver in app.js
+
+
+
+});
+</script>
+<script type="module" src="/static/app.js?v=11"></script>
 </body>
 </html>
